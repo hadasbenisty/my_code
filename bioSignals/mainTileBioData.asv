@@ -70,7 +70,7 @@ solutionTiling = [];
 figure;
 clc;
 l = 1;
-vol_v = 15:-1:4;
+vol_v = 2^10:-1:16;
 for vol_i = 1:length(vol_v)
     [minCurrErr, currSolutionTiling] = loopTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v(vol_i));
 
@@ -78,6 +78,7 @@ for vol_i = 1:length(vol_v)
     if minCurrErr < inf
         volumeRes(l) = vol_v(vol_i);
         minErr(l) = minCurrErr;
+        tilingRes(l) =   tilingCurrRes;
         solutionTilingRes(l) = currSolutionTiling;
         l = l + 1;
     end
