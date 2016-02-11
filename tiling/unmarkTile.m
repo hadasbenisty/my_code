@@ -1,5 +1,5 @@
 function tiling = unmarkTile(tiling, tile, ind2data)
-disp(['Unmarking tile ' num2str(tile.row) ' by ' num2str(tile.col) ' in ' num2str(ind2data)]);
+% disp(['Unmarking tile ' num2str(tile.row) ' by ' num2str(tile.col) ' in ' num2str(ind2data)]);
 
 [row_i,col_i] = ind2sub(size(tiling.isbusy),ind2data);
 tiling.isLeader(row_i,col_i) = false;

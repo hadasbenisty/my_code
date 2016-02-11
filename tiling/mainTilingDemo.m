@@ -83,11 +83,11 @@ solutionTiling = [];
 figure;
 clc;
 l = 1;
-vol_v = numel(orderedData):-1:4;
+vol_v = {[8 16] [10 12]};
 
 for vol_i = 1:length(vol_v)
-    [minCurrErr, tilingCurrRes, currSolutionTiling] = recursiveTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v(vol_i), ind2data, tiling, solutionTiling, Inf);
-    [minCurrErr1, currSolutionTiling1] = loopTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v(vol_i));
+    [minCurrErr, tilingCurrRes, currSolutionTiling] = recursiveTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v{vol_i}, ind2data, tiling, solutionTiling, Inf);
+    [minCurrErr1, currSolutionTiling1] = loopTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v{vol_i});
     
     if minCurrErr1 ~= minCurrErr
         if minCurrErr~= inf
@@ -104,10 +104,6 @@ for vol_i = 1:length(vol_v)
         l = l + 1;
     end
 end
-volumeRes(end+1) = 1;
-minErr(end+1) = 0;
-figure;plot(volumeRes, minErr, '-*');
-
 %
 %
 % small_row_tree{1}.folder_count = 4;

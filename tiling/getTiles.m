@@ -1,9 +1,12 @@
 function tilesList = getTiles(vol)
 
-
-D = my_divisors(vol);
+l = 1;
+for vi = 1:length(vol)
+    D = my_divisors(vol(vi));
 
 for k = 1:length(D)
-    tilesList(k).row = D(k);
-    tilesList(k).col = vol/tilesList(k).row;
+    tilesList(l).row = D(k);
+    tilesList(l).col = vol(vi)/tilesList(l).row;
+    l = l + 1;
+end
 end

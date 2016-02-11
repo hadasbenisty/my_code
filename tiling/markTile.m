@@ -2,7 +2,7 @@ function tiling = markTile(tiling, tile, ind2data)
        
 %          /* put tile on ind2data */
 %          mark ind2data as leader of tile;
-disp(['Marking tile ' num2str(tile.row) ' by ' num2str(tile.col) ' in ' num2str(ind2data)]);
+% disp(['Marking tile ' num2str(tile.row) ' by ' num2str(tile.col) ' in ' num2str(ind2data)]);
 [row_i,col_i] = ind2sub(size(tiling.isbusy),ind2data);
 tiling.isLeader(row_i,col_i) = true;
 tiling.isbusy(row_i:row_i+tile.row-1, col_i:col_i+tile.col-1) = max(tiling.isbusy(:))+1;

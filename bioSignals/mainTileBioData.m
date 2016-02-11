@@ -70,9 +70,9 @@ solutionTiling = [];
 figure;
 clc;
 l = 1;
-vol_v = 100:-1:4;
+vol_v = {[ 3*360  2*360 64:-1:2]};
 for vol_i = 1:length(vol_v)
-    [minCurrErr, currSolutionTiling] = loopTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v(vol_i));
+    [minCurrErr, currSolutionTiling] = loopTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v{vol_i});
 
 %     [minCurrErr, tilingCurrRes, currSolutionTiling] = recursiveTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v(vol_i), ind2data, tiling, solutionTiling, Inf);
     if minCurrErr < inf
@@ -82,11 +82,7 @@ for vol_i = 1:length(vol_v)
         l = l + 1;
     end
 end
-volumeRes(end+1) = 1;
-minErr(end+1) = 0;
-figure;plot(volumeRes, minErr, '-*');
 
-% evaluate all trims having constant volume
 
 
 

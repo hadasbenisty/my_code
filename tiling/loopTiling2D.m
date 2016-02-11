@@ -21,6 +21,7 @@ for iter = 1:MAX_ITERS
             %         disp(tiling.isbusy);
             disp('---------------------');
             solutionTiling = stck(stind).tiling;
+            save('solutionTiling' ,'solutionTiling','minErr');
         end
         stind = stind - 1;
         stck(stind).tiling = unmarkTile(stck(stind).tiling, tilesList(stck(stind).ti), stck(stind).ind2data);
@@ -38,18 +39,24 @@ for iter = 1:MAX_ITERS
     while stck(stind).ti <= length(tilesList)
         % cheking if this tile fits
         isTileFits = checkTile(data, row_tree, col_tree, stck(stind).ind2data, tilesList(stck(stind).ti));
+        
         if isTileFits
-            % marking this tile
-            stck(stind).tiling = markTile(stck(stind).tiling, tilesList(stck(stind).ti), stck(stind).ind2data);
-            currErr = evalTilingErr(data, stck(stind).tiling);
-            if currErr < minErr
-                stck(stind+1) = stck(stind);
-                stck(stind+1).ind2data = stck(stind+1).ind2data + 1;
-                stck(stind+1).ti = 1;
-                stind = stind + 1;
-                break;
-            else
-                stck(stind).tiling = unmarkTile(stck(stind).tiling, tilesList(stck(stind).ti), stck(stind).ind2data);
+        % checking if it is not occupied
+
+            isTileNotOcc = checkTileOcc(stck(stind).tiling, stck(stind).ind2data, tilesList(stck(stind).ti));
+            if isTileNotOcc
+                % marking this tile
+                stck(stind).tiling = markTile(stck(stind).tiling, tilesList(stck(stind).ti), stck(stind).ind2data);
+                currErr = evalTilingErr(data, stck(stind).tiling);
+                if currErr < minErr
+                    stck(stind+1) = stck(stind);
+                    stck(stind+1).ind2data = stck(stind+1).ind2data + 1;
+                    stck(stind+1).ti = 1;
+                    stind = stind + 1;
+                    break;
+                else
+                    stck(stind).tiling = unmarkTile(stck(stind).tiling, tilesList(stck(stind).ti), stck(stind).ind2data);
+                end
             end
         end
         stck(stind).ti = stck(stind).ti + 1;
