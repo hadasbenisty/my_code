@@ -104,10 +104,6 @@ for vol_i = 1:length(vol_v)
         l = l + 1;
     end
 end
-volumeRes(end+1) = 1;
-minErr(end+1) = 0;
-figure;plot(volumeRes, minErr, '-*');
-
 %
 %
 % small_row_tree{1}.folder_count = 4;
