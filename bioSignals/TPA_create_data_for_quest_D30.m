@@ -39,6 +39,8 @@ analysisDir         = '..\..\..\datasets\biomed\D30\8_12_14_1-40';%\8_6_14 new\8
 analysisDir         = '..\..\..\datasets\biomed\D30\8_17_14_1-45';%\8_6_14 new\8_6_14_cno\';
 analysisDir         = '..\..\..\datasets\biomed\D30\8_17_14_46-80';%\8_6_14 new\8_6_14_cno\';
 analysisDir         = '..\..\..\datasets\biomed\D30\8_15_13_1-35';%\8_6_14 new\8_6_14_cno\';
+analysisDir         = '..\..\..\datasets\biomed\D8\8_6_14_1-20_control';%\8_6_14 new\8_6_14_cno\';
+analysisDir         = '..\..\..\datasets\biomed\D8\8_6_14_21-60_cno';%\8_6_14 new\8_6_14_cno\';
 
 
 loadBehaveData = false;

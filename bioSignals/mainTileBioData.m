@@ -6,7 +6,7 @@ addpath(genpath('../../3D_Questionnaire/Questionnaire'));
 addpath(genpath('../../3D_Questionnaire/utils'));
 addpath(genpath('../tiling'));
 
-files = {'8_15_13_1-35' };% '8_15_13_1-35' '8_12_14_1-40' '8_17_14_1-45'  '8_17_14_46-80'  '8_15_13_1-35' '8_12_14_1-40'
+files = {'8_6_14_1-20_control' '8_6_14_21-60_cno' };% '8_15_13_1-35' '8_12_14_1-40' '8_17_14_1-45'  '8_17_14_46-80'  '8_15_13_1-35' '8_12_14_1-40'
 
 rng(73631);
 %% Init params
@@ -18,18 +18,34 @@ row_alpha = .2;row_beta = 0;col_alpha = .2;col_beta = 0;trial_alpha = .2;trial_b
 params  = SetQuest3DParams(eigsnum_row, eigsnum_col, eigsnum_trial, row_alpha, row_beta, col_alpha, col_beta, trial_alpha, trial_beta );
 %% Load Data
 
-datapth = '..\..\..\datasets\biomed\D30';
+datapth = '..\..\..\datasets\biomed\D8';
 
-nt = 360;
+nt = 120;
 [X, expLabel, NeuronsLabels] = loadNeuronsData(datapth, files, nt);
 
 
 [nr, nt, nT] = size(X);
-data(:, :, 1) = X(:, :, 1);
+data = X;
 
 %% Run Qu. 2D
-[row_tree, col_tree] = RunQuestionnaire(params, data);
+params  = SetGenericQuestParams;
+   
+[ row_tree, col_tree, trial_tree, row_dual_aff, col_dual_aff, trial_dual_aff ] = RunGenericQuestionnaire3D( params, data );
+figure;
+subplot(3,2,1);
+[vecs, vals] = CalcEigs(threshold(col_dual_aff, 0.2), 4);
+plotEmbeddingWithColors(vecs * vals, 1:size(data, 2), 'Time Embedding');
+subplot(3,2,2);
+plotEmbeddingWithColors(vecs * vals, [ones(1, 41) 100*ones(1, 80)], 'Time Colored by Tone');
 
+subplot(3,1,2);
+[vecs, vals] = CalcEigs(threshold(row_dual_aff, 0.0), 3);
+plotEmbeddingWithColors(vecs * vals, 1:size(data, 1), 'Nuerons Embedding');
+subplot(3,2,5);
+[vecs, vals] = CalcEigs(threshold(trial_dual_aff, 0.0), 3);
+plotEmbeddingWithColors(vecs * vals, 1:size(data, 3), 'Trials Embedding');
+subplot(3,2,6);
+plotEmbeddingWithColors(vecs * vals, [ones(1, 20) 100*ones(1, 40)], 'Trials Colored by CNO');
 
 %% Order by tree
 
@@ -70,7 +86,7 @@ solutionTiling = [];
 figure;
 clc;
 l = 1;
-vol_v = {[ 3*360  2*360 64:-1:2]};
+vol_v = {[ 3*114  2*114  114 32 16 12 8]};
 for vol_i = 1:length(vol_v)
     [minCurrErr, currSolutionTiling] = loopTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v{vol_i});
 
