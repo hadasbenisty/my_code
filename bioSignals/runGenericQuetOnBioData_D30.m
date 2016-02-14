@@ -60,7 +60,6 @@ for ci = 1:length(folders)
 end
 figure;
 imagesc(meanMat);
-title(num2str(ci));
 set(gca, 'Ytick', 1:length(folders));
 
 
@@ -71,7 +70,7 @@ meanMat=[];l = 2;
 folders = unique(row_tree{l}.clustering);
 for ci = 1:length(folders)
     inds2folder = find(row_tree{l}.clustering == folders(ci));
-    meanMat(ci, :) = mean(mean(permute(X1(inds2folder, :, 41:end), [2 3 1]),2), 3);
+    meanMat(ci, :) = mean(mean(permute(X1(inds2folder, :, :), [2 3 1]),2), 3);
 end
 figure;
 imagesc(meanMat);
@@ -81,7 +80,7 @@ meanMat=[];l = 2;
 folders = unique(row_tree{l}.clustering);
 for ci = 1:length(folders)
     inds2folder = find(row_tree{l}.clustering == folders(ci));
-    meanMat(ci, :) = mean(mean(permute(X2(inds2folder, :, 41:end), [2 3 1]),2), 3);
+    meanMat(ci, :) = mean(mean(permute(X2(inds2folder, :, :), [2 3 1]),2), 3);
 end
 figure;
 imagesc(meanMat);
@@ -91,7 +90,7 @@ meanMat=[];l = 2;
 folders = unique(row_tree{l}.clustering);
 for ci = 1:length(folders)
     inds2folder = find(row_tree{l}.clustering == folders(ci));
-    meanMat(ci, :) = mean(mean(permute(X3(inds2folder, :, 41:end), [2 3 1]),2), 3);
+    meanMat(ci, :) = mean(mean(permute(X3(inds2folder, :, :), [2 3 1]),2), 3);
 end
 figure;
 imagesc(meanMat);
