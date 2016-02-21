@@ -17,7 +17,7 @@ for iter = 1:MAX_ITERS
         stck(stind).currErr = evalTilingErr(data, stck(stind).tiling);
         if stck(stind).currErr < minErr
             minErr =  stck(stind).currErr;
-            disp(['Volume = ' num2str(vol) ' err = ' num2str(minErr)]);
+            disp([ ' err = ' num2str(minErr)]);
             %         disp(tiling.isbusy);
             disp('---------------------');
             solutionTiling = stck(stind).tiling;

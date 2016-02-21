@@ -4,7 +4,7 @@ params.init_aff_col.metric = 'cosine_similarity';
 % params.init_aff_col.metric = 'Euc';
 params.init_aff_col.eps = 2;
 params.init_aff_col.knn = 10;
-params.init_aff_col.thresh = 0.5;
+params.init_aff_col.thresh = 0.2;
 
 params.init_aff_row.on_rows = false;
 params.init_aff_row.metric = 'cosine_similarity';
@@ -22,15 +22,15 @@ params.init_aff_trials.knn = 10;
 params.init_aff_trials.thresh = 0;
 
 params.row_tree.constant=2;
-params.row_tree.min_joins_percentage = 0.5;
+params.row_tree.min_joins_percentage = 0.2;
 params.row_tree.eigs_num = eigsnum_row;
 params.col_tree.constant=1;
 params.col_tree.eigs_num = eigsnum_col;
-params.col_tree.min_joins_percentage = 0.5;
+params.col_tree.min_joins_percentage = 0.2;
 
 params.trials_tree.constant=2;
 params.trials_tree.eigs_num = eigsnum_trials;
-params.trials_tree.min_joins_percentage = 0.5;
+params.trials_tree.min_joins_percentage = 0.2;
 
 params.n_iters = 2;
 params.col_emd.beta=0;

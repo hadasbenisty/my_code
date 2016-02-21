@@ -8,8 +8,7 @@ addpath(genpath('../../PCAclustering'));
 addpath(genpath('../gen_utils'));
 addpath(genpath('../tiling'));
 
-files = { '8_12_14_1-40' '8_15_13_1-35'  '8_17_14_1-45'  '8_17_14_46-80'};% '8_15_13_1-35' '8_12_14_1-40' '8_17_14_1-45'  '8_17_14_46-80'  '8_15_13_1-35' '8_12_14_1-40'
-
+files = {'8_6_14_1-20_control' '8_6_14_21-60_cno'};
 rng(73631);
 %% Init params
 dorandperm_col = false;
@@ -17,17 +16,17 @@ dorandperm_row = false;
 dorandperm_trials = false;
 %% Load Data
 
-datapth = '..\..\..\datasets\biomed\D30';
+datapth = '..\..\..\datasets\biomed\D8';
 
-nt = 360;
+nt = 120;
 [X, expLabel, NeuronsLabels] = loadNeuronsData(datapth, files, nt);
 
 
 [nr, nt, nT] = size(X);
-dataFor3DQ = X(:, :, 1:40);
+dataFor3DQ = X;
 
 %% Run Qu. 3D
-params  = SetGenericQuestParamsD30;
+params  = SetGenericQuestParamsD8;
 % making sure that the timing tree is not too complicated
 params.row_tree.treeDepth=5;
 [ col_tree, trial_tree, row_tree,  col_dual_aff, trial_dual_aff, row_dual_aff] = RunGenericQuestionnaire3D( params, permute(dataFor3DQ, [2 3 1]) );
