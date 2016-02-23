@@ -1,0 +1,293 @@
+%% 1. init
+close all;
+clear all;
+clc;
+dbstop if error;
+addpath(genpath('../../3D_Questionnaire/Questionnaire'));
+addpath(genpath('../../3D_Questionnaire/utils'));
+addpath(genpath('../../PCAclustering'));
+addpath(genpath('../gen_utils'));
+addpath(genpath('../tiling'));
+
+t = 0:1/1e3:2;
+f1 = [linspace(300, 350, 50).'; linspace(350, 400, 50).'];
+fo = [400 * ones(50, 1) ; linspace(400, 500, 50).'];
+nT = length(f1);
+T = 1;
+foi = 1;
+for fi = 1:length(f1)/2
+    x{T} = chirp(t, fo(fi), 1, f1(fi), 'linear');
+    T = T + 1;
+end
+for fi = length(f1)/2+1:length(f1)
+    x{T} = chirp(t, fo(fi), 1, f1(fi), 'quadratic', [] ,'convex');
+    T = T + 1;
+end
+
+%% 2. Create 3D signals by STFT 
+fs = 1 / t(2);
+nfft = 256;
+hop = round(256/10);
+figure;
+for T = 1:nT
+    eigsnum_col = 10;
+    eigsnum_row = 10;
+    eigsnum_trials = 10;
+      
+    params = getParamsForSTFTchirp(eigsnum_col,eigsnum_row, eigsnum_trials);  
+    P = spectrogram(x{T},20,4,256,1e3,'yaxis');
+    data(:, :, T) = log(abs(P));
+    if params.verbose == 2
+        imagesc(data(:, :, T));
+        drawnow;
+        F(T) = getframe;
+    end
+    
+    [n_rows, n_cols] = size(data(:, :, T));
+end
+[nr, nt, nT] = size(data);
+dataFor2DQ = data(:, :, end-10);
+%% 3. run 2D ques.
+params = SetGenericQuestParams(2);
+params.col_tree.k = 2;
+params.row_tree.k = 2;
+params.col_tree.treeDepth = 8;
+params.row_tree.treeDepth = 8;
+[col_tree, row_tree, col_dual_aff, row_dual_aff] = RunGenericQuestionnaire2D(params, dataFor2DQ);
+
+      
+figure;
+subplot(2,2,1);
+[vecs_f, vals] = CalcEigs(threshold(col_dual_aff, 0.0), 3);
+plotEmbeddingWithColors(vecs_f * vals, 1:size(dataFor2DQ, 1), 'Freq Embedding');
+subplot(2,2,2);
+[vecs_t, vals] = CalcEigs(threshold(row_dual_aff, 0.0), 3);
+plotEmbeddingWithColors(vecs_t * vals, 1:size(dataFor2DQ, 2), 'Time Embedding');
+
+subplot(2,2,3);
+plotTreeWithColors(col_tree, 1:length(col_dual_aff));    title('Freq Tree');
+subplot(2,2,4);    plotTreeWithColors(row_tree, 1:length(row_dual_aff));    title('Time Tree')
+
+
+
+
+%% Order by tree
+[vecs_col, vals_col] = CalcEigs(col_dual_aff, 4); 
+[vecs_row, vals_row] = CalcEigs(row_dual_aff, 4); 
+subplot(2,1,1);plotEmbeddingWithColors(vecs_col*vals_col, 1:size(vecs_col,1), 'Col')
+subplot(2,1,2);plotEmbeddingWithColors(vecs_row*vals_row, 1:size(vecs_row,1), 'Row')
+[ row_order ] = OrganizeDiffusion3DbyOneDim( dataFor2DQ.', vecs_row*vals_row );
+[ col_order ] = OrganizeDiffusion3DbyOneDim( dataFor2DQ, vecs_col*vals_col );
+% [~, row_order] = sort(row_orderedtree{2}.clustering);
+% [~, col_order] = sort(col_orderedtree{2}.clustering);
+% 
+
+orderedData = dataFor2DQ(:, row_order);
+orderedData = orderedData(col_order, :);
+% prepare trees for recursion
+for treeLevel = 1:length(row_tree)
+    row_orderedtree{treeLevel} = row_tree{treeLevel};
+    row_orderedtree{treeLevel}.clustering = row_tree{treeLevel}.clustering( row_order);
+end
+for treeLevel = 1:length(col_tree)
+    col_orderedtree{treeLevel} = col_tree{treeLevel};
+    col_orderedtree{treeLevel}.clustering = col_tree{treeLevel}.clustering( col_order);
+end
+figure;
+subplot(2,2,1);plotTreeWithColors(row_tree, 1:length(row_dual_aff));    title('Time Tree');
+subplot(2,2,2);plotTreeWithColors(col_tree, 1:length(col_dual_aff));    title('Freq Tree');
+subplot(2,2,3);plotTreeWithColors(row_orderedtree, 1:length(row_dual_aff));    title('Time Tree');
+subplot(2,2,4);plotTreeWithColors(col_orderedtree, 1:length(col_dual_aff));    title('Freq Tree');
+
+
+
+figure;
+subplot(2,2,1);
+imagesc(dataFor2DQ);title('Orig Data');
+xlabel('Time');
+subplot(2,2,4);
+imagesc(orderedData);title('Ordered Data');
+xlabel('Time');
+
+subplot(2,2,3);
+plotTreeWithColors(row_orderedtree, 1:size(dataFor2DQ,1));
+title('Row Tree'); colorbar('off')
+view(-90,90)
+subplot(2,2,2);
+plotTreeWithColors(col_orderedtree, 1:size(dataFor2DQ,2))
+title('Col Tree');colorbar('off')
+
+
+ind2data = 1;
+minErr = Inf;
+tiling.isbusy = zeros(size(orderedData, 1), size(orderedData, 2), 1);
+tiling.isLeader = zeros(size(orderedData, 1), size(orderedData, 2), 1);
+solutionTiling = [];
+figure;
+clc;
+l = 1;
+vol_v = {  min(numel(orderedData)/2, 1e3):-1:(max(size(orderedData))-1)  };
+for vol_i = 1:length(vol_v)
+    [minCurrErr, currSolutionTiling] = loopTiling2D(orderedData.', row_orderedtree, col_orderedtree, vol_v{vol_i});
+
+%     [minCurrErr, tilingCurrRes, currSolutionTiling] = recursiveTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v(vol_i), ind2data, tiling, solutionTiling, Inf);
+    if minCurrErr < inf
+        volumeRes(l) = vol_v(vol_i);
+        minErr(l) = minCurrErr;
+        solutionTilingRes(l) = currSolutionTiling;
+        l = l + 1;
+    end
+end
+
+[~,a]=sort(col_order);
+for ci = 1:length(unique(solutionTilingRes.isbusy(:)))
+   [ind_i, ind_j] = find(solutionTilingRes.isbusy == ci) ;
+   meanTiled(ind_i, ind_j) = mean(mean(orderedData(ind_i, ind_j)));
+end
+
+%% plot data and tiling of the other experiments
+
+figure;plotTiledData(orderedData(:,a), meanTiled(:,a), [], solutionTilingRes.isbusy(:,a), 'chirp')
+
+
+
+
+
+if 0
+
+
+% run 3D ques.
+figspath = '';
+rowtitle = 'Time';
+coltitle = 'Frequency';
+trialtitle = 'Trial';
+savefigs=false;
+
+eigsnum_row = 4; eigsnum_col = 4; eigsnum_trials = 4;
+row_thresh = 0;
+col_thresh = 0;
+trials_thresh = 0;
+plotTreesAndEmbedding3D(figspath, savefigs, rowtitle, coltitle, trialtitle, ...
+                                 eigsnum_row, eigsnum_col, eigsnum_trials, ...
+                                 row_aff, col_aff, trials_aff, ...
+                                 row_thresh, col_thresh, trials_thresh, ...
+                                 row_tree, col_tree, trials_tree, ...
+                                 1:size(row_aff, 1), 1:size(col_aff, 1), 1:size(trials_aff, 1), [],[],f1);
+
+
+
+%% Run Qu. 3D
+[ col_tree, trial_tree, row_tree,  col_dual_aff, trial_dual_aff, row_dual_aff] = RunGenericQuestionnaire3D( params, permute(dataFor3DQ, [2 3 1]) );
+figure;
+subplot(1,2,1);
+[vecs_t, vals] = CalcEigs(threshold(col_dual_aff, 0.0), 3);
+plotEmbeddingWithColors(vecs_t * vals, 1:size(dataFor3DQ, 2), 'Time Embedding');
+subplot(1,2,2);
+plotEmbeddingWithColors(vecs_t * vals, [ones(1, 100) 100*ones(1, 20) 200*ones(1, 240)], 'Time Colored by Tone');
+
+figure;
+[vecs_r, vals] = CalcEigs(threshold(row_dual_aff, 0.0), 3);
+plotEmbeddingWithColors(vecs_r * vals, 1:size(dataFor3DQ, 1), 'Nuerons Embedding');
+figure;
+[vecs_T, vals] = CalcEigs(threshold(trial_dual_aff, 0.0), 4);
+plotEmbeddingWithColors(vecs_T * vals, 1:size(dataFor3DQ, 3), 'Trials Embedding');
+
+figure;    subplot(3,1,1);
+plotTreeWithColors(col_tree, 1:length(col_dual_aff));    title('Time Col Tree');
+subplot(3,1,2);    plotTreeWithColors(row_tree, 1:length(row_dual_aff));    title('Nuerons Tree')
+subplot(3,1,3);    plotTreeWithColors(trial_tree, 1:length(trial_dual_aff));    title('Trialsl Tree');
+
+%% Order by tree
+meanData = mean(dataFor3DQ, 3);
+[~, row_order] = sort(row_tree{2}.clustering);
+[~, col_order] = sort(col_tree{2}.clustering);
+orderedData = meanData(row_order, :);
+orderedData = orderedData(:, col_order);
+
+% prepare trees for recursion
+for treeLevel = 1:length(row_tree)
+    row_orderedtree{treeLevel} = row_tree{treeLevel};
+    row_orderedtree{treeLevel}.clustering = row_tree{treeLevel}.clustering( row_order);
+end
+for treeLevel = 1:length(col_tree)
+    col_orderedtree{treeLevel} = col_tree{treeLevel};
+    col_orderedtree{treeLevel}.clustering = col_tree{treeLevel}.clustering( col_order);
+end
+
+figure;
+subplot(2,2,1);
+imagesc(meanData);title('Orig Data');
+xlabel('Time');
+set(gca, 'YTick', 1:length(NeuronsLabels));
+set(gca, 'YTickLabel',NeuronsLabels);
+subplot(2,2,4);
+imagesc(orderedData);title('Ordered Data');
+xlabel('Time');
+set(gca, 'YTick', 1:length(NeuronsLabels));
+set(gca, 'YTickLabel',NeuronsLabels(row_order));
+
+subplot(2,2,3);
+plotTreeWithColors(row_orderedtree, 1:size(meanData,1));
+title('Row Tree'); colorbar('off')
+view(-90,90)
+subplot(2,2,2);
+plotTreeWithColors(col_orderedtree, 1:size(meanData,2))
+title('Col Tree');colorbar('off')
+
+
+ind2data = 1;
+minErr = Inf;
+tiling.isbusy = zeros(size(orderedData, 1), size(orderedData, 2), 1);
+tiling.isLeader = zeros(size(orderedData, 1), size(orderedData, 2), 1);
+solutionTiling = [];
+figure;
+clc;
+l = 1;
+vol_v = {[  1e3:-1:361 359:-1:109 107:-1:100  ]};
+for vol_i = 1:length(vol_v)
+    [minCurrErr, currSolutionTiling] = loopTiling2D(orderedData, row_orderedtree, col_orderedtree, vol_v{vol_i});
+
+%     [minCurrErr, tilingCurrRes, currSolutionTiling] = recursiveTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v(vol_i), ind2data, tiling, solutionTiling, Inf);
+    if minCurrErr < inf
+        volumeRes(l) = vol_v(vol_i);
+        minErr(l) = minCurrErr;
+        solutionTilingRes(l) = currSolutionTiling;
+        l = l + 1;
+    end
+end
+
+[~,a]=sort(col_order);
+for ci = 1:length(unique(solutionTilingRes.isbusy(:)))
+   [ind_i, ind_j] = find(solutionTilingRes.isbusy == ci) ;
+   meanTiled(ind_i, ind_j) = mean(mean(orderedData(ind_i, ind_j)));
+end
+
+%% plot data and tiling of the other experiments
+
+X1 = X(:, :, 41:75);
+X2 = X(:, :, 76:120);
+X3 = X(:, :, 121:end);
+meanData1 = mean(X1, 3);
+meanData2 = mean(X2, 3);
+meanData3 = mean(X3, 3);
+
+orderedData1 = meanData1(row_order, :);
+orderedData1 = orderedData1(:, col_order);
+orderedData2 = meanData2(row_order, :);
+orderedData2 = orderedData2(:, col_order);
+orderedData3 = meanData3(row_order, :);
+orderedData3 = orderedData3(:, col_order);
+for ci = 1:length(unique(solutionTilingRes.isbusy(:)))
+   [ind_i, ind_j] = find(solutionTilingRes.isbusy == ci) ;
+   meanTiled1(ind_i, ind_j) = mean(mean(orderedData1(ind_i, ind_j)));
+   meanTiled2(ind_i, ind_j) = mean(mean(orderedData2(ind_i, ind_j)));
+   meanTiled3(ind_i, ind_j) = mean(mean(orderedData3(ind_i, ind_j)));
+end
+figure;plotTiledData(orderedData(:,a), meanTiled(:,a), NeuronsLabels(row_order), solutionTilingRes.isbusy(:,a), '8/12/14')
+figure;plotTiledData(orderedData1(:,a), meanTiled1(:,a), NeuronsLabels(row_order), solutionTilingRes.isbusy(:,a), '8/15/13')
+figure;plotTiledData(orderedData2(:,a), meanTiled2(:,a), NeuronsLabels(row_order), solutionTilingRes.isbusy(:,a), '8/17/14 part 1')
+figure;plotTiledData(orderedData3(:,a), meanTiled3(:,a), NeuronsLabels(row_order), solutionTilingRes.isbusy(:,a), '8/17/14 part 2')
+
+end
+
+

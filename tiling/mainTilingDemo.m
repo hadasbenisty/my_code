@@ -42,14 +42,21 @@ imagesc(data);colorbar;
 title('Data');
 
 %% Run Qu. 2D
-[row_tree, col_tree] = RunQuestionnaire(params, data);
+[row_tree, col_tree, row_dual_aff, col_dual_aff] = RunQuestionnaire(params, data);
 
 %% Visualization
+[vecs_col, vals_col] = CalcEigs(col_dual_aff, 4); 
+[vecs_row, vals_row] = CalcEigs(row_dual_aff, 4); 
+subplot(2,1,1);plotEmbeddingWithColors(vecs_col*vals_col, 1:size(vecs_col,1), 'Col')
+subplot(2,1,2);plotEmbeddingWithColors(vecs_row*vals_row, 1:size(vecs_row,1), 'Row')
+[ row_order ] = OrganizeDiffusion3DbyOneDim( data, vecs_row*vals_row );
+[ col_order ] = OrganizeDiffusion3DbyOneDim( data.', vecs_col*vals_col );
 
-[~, row_order] = sort(row_tree{2}.clustering);
-[~, col_order] = sort(col_tree{2}.clustering);
+% [~, row_order] = sort(row_tree{2}.clustering);
+% [~, col_order] = sort(col_tree{2}.clustering);
 orderedData = data(row_order, :);
 orderedData = orderedData(:, col_order);
+
 
 % prepare trees for recursion
 for treeLevel = 1:length(row_tree)
@@ -60,6 +67,11 @@ for treeLevel = 1:length(col_tree)
     col_orderedtree{treeLevel} = col_tree{treeLevel};
     col_orderedtree{treeLevel}.clustering = col_tree{treeLevel}.clustering( col_order);
 end
+figure;
+subplot(2,2,1);plotTreeWithColors(row_tree, 1:length(row_dual_aff));    title('Time Tree');
+subplot(2,2,2);plotTreeWithColors(col_tree, 1:length(col_dual_aff));    title('Freq Tree');
+subplot(2,2,3);plotTreeWithColors(row_orderedtree, 1:length(row_dual_aff));    title('Time Tree');
+subplot(2,2,4);plotTreeWithColors(col_orderedtree, 1:length(col_dual_aff));    title('Freq Tree');
 
 figure;
 subplot(2,2,1);

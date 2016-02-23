@@ -4,6 +4,8 @@ clc;
 dbstop if error;
 addpath(genpath('../../3D_Questionnaire/Questionnaire'));
 addpath(genpath('../../3D_Questionnaire/utils'));
+addpath(genpath('../../PCAclustering'));
+addpath(genpath('../gen_utils'));
 addpath(genpath('../tiling'));
 
 files = {'8_6_14_1-20_control' '8_6_14_21-60_cno'};% '8_6_14_21-60_cno' };% '8_15_13_1-35' '8_12_14_1-40' '8_17_14_1-45'  '8_17_14_46-80'  '8_15_13_1-35' '8_12_14_1-40'
@@ -28,43 +30,54 @@ data = X;
 
 %% Run Qu. 3D
 params  = SetGenericQuestParamsD8;
-   params.init_aff_col.metric = 'euc';
-params.init_aff_row.metric = 'euc';
-params.init_aff_trial.metric = 'euc';
+params.col_tree.CalcAffFun = @CalcEmdAff3D_mahal;
+params.row_tree.CalcAffFun = @CalcEmdAff3D_mahal;
+params.trial_tree.CalcAffFun = @CalcEmdAff3D_mahal;
+params.col_tree.treeDepth = 7;
+params.row_tree.treeDepth = 7;
+params.trial_tree.treeDepth = 7;
+params.row_emd.beta=.5;
+params.col_emd.beta=.5;
+params.trial_emd.beta=.5;
+params.n_iters=1;
+[ row_tree, trial_tree, col_tree,  row_dual_aff, trial_dual_aff, col_dual_aff] = RunGenericQuestionnaire3D( params, permute(data, [2 1 3]) );
 
-[ col_tree, trial_tree, row_tree,  col_dual_aff, trial_dual_aff, row_dual_aff] = RunGenericQuestionnaire3D( params, permute(data, [2 3 1]) );
+% [ col_tree, trial_tree, row_tree,  col_dual_aff, trial_dual_aff, row_dual_aff] = RunGenericQuestionnaire3D( params, permute(data, [2 3 1]) );
 figure;
 subplot(3,2,1);
-[vecs, vals] = CalcEigs(threshold(col_dual_aff, 0.2), 3);
+[vecs, vals] = CalcEigs(threshold(row_dual_aff, 0.0), 4);
 plotEmbeddingWithColors(vecs * vals, 1:size(data, 2), 'Time Embedding');
 subplot(3,2,2);
 plotEmbeddingWithColors(vecs * vals, [ones(1, 40) 100*ones(1, 80)], 'Time Colored by Tone');
 
 subplot(3,1,2);
-[vecs, vals] = CalcEigs(threshold(row_dual_aff, 0.0), 3);
+[vecs, vals] = CalcEigs(threshold(trial_dual_aff, 0.0), 4);
 plotEmbeddingWithColors(vecs * vals, 1:size(data, 1), 'Nuerons Embedding');
 subplot(3,2,5);
-[vecs, vals] = CalcEigs(threshold(trial_dual_aff, 0.0), 3);
+[vecs, vals] = CalcEigs(threshold(col_dual_aff, 0.0), 2);
 plotEmbeddingWithColors(vecs * vals, 1:size(data, 3), 'Trials Embedding');
 subplot(3,2,6);
-plotEmbeddingWithColors(vecs * vals, [ones(1, 20) 100*ones(1, 40)], 'Trials Colored by CNO');
+[vecs, vals] = CalcEigs(threshold(col_dual_aff, 0.0), 3);
+plotEmbeddingWithColors(vecs * vals, 1:size(data, 3), 'Trials Embedding');
 figure;    subplot(3,1,1);
-plotTreeWithColors(col_tree, 1:length(col_dual_aff));    title('Time Col Tree');
-subplot(3,1,2);    plotTreeWithColors(row_tree, 1:length(row_dual_aff));    title('Nuerons Tree')
-subplot(3,1,3);    plotTreeWithColors(trial_tree, 1:length(trial_dual_aff));    title('Trials Tree');
+plotTreeWithColors(col_tree, 1:length(col_dual_aff));    title('Trials Tree');
+subplot(3,1,2);    plotTreeWithColors(row_tree, 1:length(row_dual_aff));    title('Time Tree')
+subplot(3,1,3);    plotTreeWithColors(trial_tree, 1:length(trial_dual_aff));    title('Nuerons Tree');
 
 tree_level=2;
-[vecs, vals] = CalcEigs(threshold(col_dual_aff, 0.2), 2);
-[~,toneIndic] = min(diff(vecs(2:end)));
-[vecs, vals] = CalcEigs(threshold(trial_dual_aff, 0.0), 2);
+[vecs, vals] = CalcEigs(threshold(row_dual_aff, 0.0), 2);
+
+% [~,toneIndic] = min(diff(vecs(2:end)));
+toneIndic=41;
+[vecs, vals] = CalcEigs(threshold(col_dual_aff, 0.0), 2);
 CNO_th = min(vecs(1:20));
 inds2CNO = find((vecs )<= CNO_th);
 inds2CONTROL = find(vecs > CNO_th);
 inds2CONTROL_part1 = inds2CONTROL(inds2CONTROL<=30);
 inds2CONTROL_part2 = inds2CONTROL(inds2CONTROL>30);
-[meanMat_beforeCNO_beforeTone, allMat_beforeCNO_beforeTone] = getCentroidsByTree(row_tree{tree_level}, X(:,1:toneIndic,inds2CONTROL_part1), NeuronsLabels, NeuronsLabels);
-[meanMat_afterCNO_beforeTone, allMat_afterCNO_beforeTone] = getCentroidsByTree(row_tree{tree_level}, X(:,1:toneIndic,inds2CONTROL_part2), NeuronsLabels, NeuronsLabels);
-[meanMat_CNO_beforeTone, allMat_CNO_beforeTone] = getCentroidsByTree(row_tree{tree_level}, X(:,1:toneIndic,inds2CNO), NeuronsLabels, NeuronsLabels);
+[meanMat_beforeCNO_beforeTone, allMat_beforeCNO_beforeTone] = getCentroidsByTree(trial_tree{tree_level}, X(:,1:toneIndic,inds2CONTROL_part1), NeuronsLabels, NeuronsLabels);
+[meanMat_afterCNO_beforeTone, allMat_afterCNO_beforeTone] = getCentroidsByTree(trial_tree{tree_level}, X(:,1:toneIndic,inds2CONTROL_part2), NeuronsLabels, NeuronsLabels);
+[meanMat_CNO_beforeTone, allMat_CNO_beforeTone] = getCentroidsByTree(trial_tree{tree_level}, X(:,1:toneIndic,inds2CNO), NeuronsLabels, NeuronsLabels);
 
 params.init_aff_mean_mat = params.init_aff_row;
 params.init_aff_mean_mat.metric = 'euc';
@@ -81,9 +94,9 @@ params.init_aff_mean_mat.metric = 'euc';
 
 
 
-[meanMat_beforeCNO_afterTone, allMat_beforeCNO_afterTone] = getCentroidsByTree(row_tree{tree_level}, X(:,toneIndic+1:end,inds2CONTROL_part1), NeuronsLabels, NeuronsLabels);
-[meanMat_afterCNO_afterTone, allMat_afterCNO_afterTone] = getCentroidsByTree(row_tree{tree_level}, X(:,toneIndic+1:end,inds2CONTROL_part2), NeuronsLabels, NeuronsLabels);
-[meanMat_CNO_afterTone, allMat_CNO_afterTone] = getCentroidsByTree(row_tree{tree_level}, X(:,toneIndic+1:end,inds2CNO), NeuronsLabels, NeuronsLabels);
+[meanMat_beforeCNO_afterTone, allMat_beforeCNO_afterTone] = getCentroidsByTree(trial_tree{tree_level}, X(:,toneIndic+1:end,inds2CONTROL_part1), NeuronsLabels, NeuronsLabels);
+[meanMat_afterCNO_afterTone, allMat_afterCNO_afterTone] = getCentroidsByTree(trial_tree{tree_level}, X(:,toneIndic+1:end,inds2CONTROL_part2), NeuronsLabels, NeuronsLabels);
+[meanMat_CNO_afterTone, allMat_CNO_afterTone] = getCentroidsByTree(trial_tree{tree_level}, X(:,toneIndic+1:end,inds2CNO), NeuronsLabels, NeuronsLabels);
 
 % [ aff_mat1,  ] = CalcInitAff( meanMat_beforeCNO_afterTone.', params.init_aff_row );
 % [vecs, vals] = CalcEigs(threshold(aff_mat1, 0.0), 2);% 
@@ -101,8 +114,8 @@ imagesc([meanMat_beforeCNO_beforeTone(row_order1, :) meanMat_beforeCNO_afterTone
 
 
 [X1, ~, NeuronsLabels1] = loadNeuronsData(datapth, {'8_4_14_1-25_control'}, nt);
-[meanMat1_beforeTone, allMat1_beforeTone] = getCentroidsByTree(row_tree{tree_level}, X1(:,1:toneIndic,:), NeuronsLabels, NeuronsLabels1);
-[meanMat1_afterTone, allMat1_afterTone] = getCentroidsByTree(row_tree{tree_level}, X1(:,toneIndic+1:end,:), NeuronsLabels, NeuronsLabels1);
+[meanMat1_beforeTone, allMat1_beforeTone] = getCentroidsByTree(trial_tree{tree_level}, X1(:,1:toneIndic,:), NeuronsLabels, NeuronsLabels1);
+[meanMat1_afterTone, allMat1_afterTone] = getCentroidsByTree(trial_tree{tree_level}, X1(:,toneIndic+1:end,:), NeuronsLabels, NeuronsLabels1);
 figure;
 imagesc([meanMat_beforeCNO_beforeTone(row_order1, :) meanMat_beforeCNO_afterTone(row_order1, :);...
     meanMat1_beforeTone(row_order1, :) meanMat1_afterTone(row_order1, :)]);

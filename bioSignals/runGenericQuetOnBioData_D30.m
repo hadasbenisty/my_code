@@ -28,6 +28,13 @@ data = X;
 
 %% Run Qu. 3D
 params  = SetGenericQuestParamsD30;
+params.row_emd.beta=.5;
+params.col_emd.beta=.5;
+params.trial_emd.beta=.5;
+params.col_tree.treeDepth = 7;
+params.row_tree.treeDepth = 7;
+params.trial_tree.treeDepth = 7;
+params.trial_tree.k = 2;
 [ col_tree, trial_tree, row_tree,  col_dual_aff, trial_dual_aff, row_dual_aff] = RunGenericQuestionnaire3D( params, permute(data, [2 3 1]) );
 figure;
 subplot(1,2,1);
