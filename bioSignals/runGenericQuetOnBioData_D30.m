@@ -61,12 +61,18 @@ subplot(3,1,3);    plotTreeWithColors(trial_tree, 1:length(trial_dual_aff));    
 [X3, ~, NeuronsLabels3] = loadNeuronsData(datapth, {'8_17_14_46-80'}, nt);
 
 tree_level = 2;
-[meanMat, allMat] = getCentroidsByTree(row_tree{tree_level}, X, NeuronsLabels, NeuronsLabels);
-[meanMat1, allMat1] = getCentroidsByTree(row_tree{tree_level}, X1, NeuronsLabels, NeuronsLabels1);
-[meanMat2, allMat2] = getCentroidsByTree(row_tree{tree_level}, X2, NeuronsLabels, NeuronsLabels2);
-[meanMat3, allMat3] = getCentroidsByTree(row_tree{tree_level}, X3, NeuronsLabels, NeuronsLabels3);
-
-
+[meanMat, allMat, meanMatAlltrials] = getCentroidsByTree(row_tree{tree_level}, X, NeuronsLabels, NeuronsLabels);
+[meanMat1, allMat1, meanMatAlltrials1] = getCentroidsByTree(row_tree{tree_level}, X1, NeuronsLabels, NeuronsLabels1);
+[meanMat2, allMat2, meanMatAlltrials2] = getCentroidsByTree(row_tree{tree_level}, X2, NeuronsLabels, NeuronsLabels2);
+[meanMat3, allMat3, meanMatAlltrials3] = getCentroidsByTree(row_tree{tree_level}, X3, NeuronsLabels, NeuronsLabels3);
+figure;
+for T = 1:size(meanMatAlltrials, 3)
+    subplot(2,2,1);    imagesc(meanMatAlltrials(:,:,T));
+    subplot(2,2,2);    imagesc(meanMatAlltrials1(:,:,T));
+    subplot(2,2,3);    imagesc(meanMatAlltrials2(:,:,T));
+    subplot(2,2,4);    imagesc(meanMatAlltrials3(:,:,T));
+    pause;
+end
 [ aff_mat ] = CalcEmdAffOnTreeLevels( meanMat.', col_tree, tree_level, params.row_emd);
 [vecs, vals] = CalcEigs(threshold(aff_mat, 0.0), 3);
 [ row_order ] = OrganizeDiffusion3DbyOneDim( meanMat, vecs*vals );
