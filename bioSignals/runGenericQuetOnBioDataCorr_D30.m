@@ -10,7 +10,7 @@ addpath(genpath('../gen_utils'));
 addpath(genpath('../tiling'));
 addpath(genpath('../../LargeScaleCC1.0/'));
 files = { '8_12_14_1-40' };% '8_15_13_1-35' '8_12_14_1-40' '8_17_14_1-45'  '8_17_14_46-80'  '8_15_13_1-35' '8_12_14_1-40'
-
+run2D = false;
 rng(73631);
 %% Init params
 dorandperm_col = false;
@@ -27,9 +27,8 @@ nt = 360;
 [nr, nt, nT] = size(X);
 data = X;
 
-%% Run Qu. 3D
-params  = SetGenericQuestParamsD30;
-%% Run Qu. 3D
+%% Run Qu. 2D
+
 params  = SetGenericQuestParamsD30;
 params.row_emd.beta=.5;
 params.col_emd.beta=.5;
@@ -38,8 +37,8 @@ params.col_tree.treeDepth = 7;
 params.row_tree.treeDepth = 7;
 params.trial_tree.treeDepth = 7;
 params.trial_tree.k = 2;
-params.col_tree.clusteringAlgo = @LargeScaleCorrWrapper;
-params.row_tree.clusteringAlgo = @svdClassWrapper;
+params.col_tree.clusteringAlgo = @svdClassWrapper;
+params.row_tree.clusteringAlgo = @LargeScaleCorrWrapper;
 params.trial_tree.clusteringAlgo = @LargeScaleCorrWrapper;
 params.col_tree.runOnEmbdding = true;
 params.row_tree.runOnEmbdding = true;
@@ -50,6 +49,61 @@ params.init_aff_trial.RangeMinus1to1 = false;
 params.col_tree.ccAlgo = 'expand_explore';
 params.row_tree.ccAlgo = 'swap_explore';
 params.trial_tree.ccAlgo = 'expand_explore';
+if run2D
+params.init_aff_col.initAffineFun= @CalcInitAff;
+params.init_aff_row.initAffineFun = @CalcInitAff;
+params.init_aff_trial.initAffineFun = @CalcInitAff;
+params.col_tree.CalcAffFun =  @CalcEmdAff;
+params.row_tree.CalcAffFun =  @CalcEmdAff;
+
+[ col_tree, row_tree, col_dual_aff, row_dual_aff  ] = RunGenericQuestionnaire2D( params, permute(data(:,:,1), [2 1 3]) );
+figure;
+subplot(1,2,1);
+[vecs, vals] = CalcEigs(threshold(col_dual_aff, 0.0), 3);
+plotEmbeddingWithColors(vecs * vals, 1:size(data, 2), 'Time Embedding');
+subplot(1,2,2);
+plotEmbeddingWithColors(vecs * vals, [ones(1, 100) 100*ones(1, 20) 200*ones(1, 240)], 'Time Colored by Tone');
+
+figure;
+[vecs, vals] = CalcEigs(threshold(row_dual_aff, 0.0), 3);
+plotEmbeddingWithColors(vecs * vals, 1:size(data, 1), 'Nuerons Embedding');
+
+tree_level = 5;
+figure;
+clusters = unique(row_tree{tree_level}.clustering);
+
+for ci = 1:length(clusters)
+    subplot(length(clusters), 1, ci);
+   plot(data(find( row_tree{tree_level}.clustering == clusters(ci)), :, 1).');
+   
+end
+[X1, ~, NeuronsLabels1] = loadNeuronsData(datapth, {'8_15_13_1-35'}, nt);
+[X2, ~, NeuronsLabels2] = loadNeuronsData(datapth, {'8_17_14_1-45'}, nt);
+[X3, ~, NeuronsLabels3] = loadNeuronsData(datapth, {'8_17_14_46-80'}, nt);
+figure;
+clusters = unique(row_tree{tree_level}.clustering);
+
+for ci = 1:length(clusters)
+    subplot(length(clusters), 1, ci);
+   plot(X1(find( row_tree{tree_level}.clustering == clusters(ci)), :, 1).');
+   
+end
+end
+%% Run Qu. 3D
+params.col_tree.CalcAffFun =  @CalcEmdAff3D;
+params.row_tree.CalcAffFun =  @CalcEmdAff3D;
+
+params.init_aff_col.initAffineFun= @CalcInitAff3D;
+params.init_aff_row.initAffineFun = @CalcInitAff3D;
+params.init_aff_trial.initAffineFun = @CalcInitAff3D;
+params.init_aff_trial.initAffineFun = @CalcInitAff3D;
+params.init_aff_row.metric = 'cosine_similarityOnTrials';
+params.init_aff_col.metric = 'cosine_similarity';
+params.init_aff_trial.metric = 'cosine_similarityOnTrials';
+
+params = SetGenericDimsQuestParams(2, true);
+[ Trees, dual_aff, init_aff ] = RunGenericDimsQuestionnaire( params, data(:,:,1) );
+
 [ col_tree, trial_tree, row_tree,  col_dual_aff, trial_dual_aff, row_dual_aff] = RunGenericQuestionnaire3D( params, permute(data, [2 3 1]) );
 
 figure;

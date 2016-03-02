@@ -1,4 +1,4 @@
-% close all;
+close all;
 clear all;
 clc;
 dbstop if error;
@@ -7,9 +7,26 @@ addpath(genpath('../../3D_Questionnaire/utils'));
 addpath(genpath('../../PCAclustering'));
 addpath(genpath('../gen_utils'));
 addpath(genpath('../tiling'));
+experiment = 'M2';
+switch experiment
+    case 'D30'
+        datapth = '..\..\..\datasets\biomed\D30';
+        nt = 360;
+        toneVec = [ones(1,120) 100*ones(1, 240)];
+        files = { '8_12_14_1-40' };% '8_15_13_1-35' '8_12_14_1-40' '8_17_14_1-45'  '8_17_14_46-80'  '8_15_13_1-35' '8_12_14_1-40'
+    case 'D8'
+        datapth = '..\..\..\datasets\biomed\D8';
+        files = { '8_6_14_1-20_control' '8_6_14_21-60_cno'};
+        nt = 120;
+        toneVec = [ones(1,40) 100*ones(1, 80)];
 
-files = { '8_12_14_1-40' };% '8_15_13_1-35' '8_12_14_1-40' '8_17_14_1-45'  '8_17_14_46-80'  '8_15_13_1-35' '8_12_14_1-40'
+    case 'M2'
+        datapth = '..\..\..\datasets\biomed\M2';
+        nt = 120;
+        toneVec = [ones(1,40) 100*ones(1, 80)];
+        files = { '4_4_14' };% '8_15_13_1-35' '8_12_14_1-40' '8_17_14_1-45'  '8_17_14_46-80'  '8_15_13_1-35' '8_12_14_1-40'
 
+end
 rng(73631);
 %% Init params
 dorandperm_col = false;
@@ -17,13 +34,11 @@ dorandperm_row = false;
 dorandperm_trials = false;
 %% Load Data
 
-datapth = '..\..\..\datasets\biomed\D30';
 
-nt = 360;
 [X, expLabel, NeuronsLabels] = loadNeuronsData(datapth, files, nt);
 
-selectedTimeFrams = 110:140;
-% selectedTimeFrams=1:360;
+% selectedTimeFrams = 110:140;
+selectedTimeFrams=1:size(X, 2);
 Xsel = X(:, selectedTimeFrams, :);
 [nr, nt, nT] = size(Xsel);
 data = Xsel;
@@ -124,14 +139,14 @@ clusteringN = Trees{2}{2}.clustering;
     
 end
 figure;
-[vecs, vals] = CalcEigs(threshold(dual_aff{2}, 0.0), 3);
+[vecs, vals] = CalcEigs(threshold(dual_aff{1}, 0.0), 3);
 subplot(2,1,1);
 plotEmbeddingWithColors(vecs * vals, 1:size(data, 2), 'Time Embedding');
 subplot(2,1,2);
-plotEmbeddingWithColors(vecs * vals, [ones(1,10) 100*ones(1, 21)], 'Time Embedding');
+plotEmbeddingWithColors(vecs * vals, toneVec, 'Time Embedding');
 
 figure;
-[vecs, vals] = CalcEigs(threshold(dual_aff{1}, 0.0), 3);
+[vecs, vals] = CalcEigs(threshold(dual_aff{2}, 0.0), 3);
 plotEmbeddingWithColors(vecs * vals, 1:size(data, 1), 'Nuerons Embedding');
 figure;
 [vecs, vals] = CalcEigs(threshold(dual_aff{3}, 0.0), 4);
