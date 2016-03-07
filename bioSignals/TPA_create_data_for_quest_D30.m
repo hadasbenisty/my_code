@@ -39,13 +39,13 @@
 % analysisDir         = '..\..\..\datasets\biomed\D30\8_17_14_1-45';%\8_6_14 new\8_6_14_cno\';
 % analysisDir         = '..\..\..\datasets\biomed\D30\8_17_14_46-80';%\8_6_14 new\8_6_14_cno\';
 % analysisDir         = '..\..\..\datasets\biomed\D30\8_15_13_1-35';%\8_6_14 new\8_6_14_cno\';
-% analysisDir         = '..\..\..\datasets\biomed\D8\8_6_14_1-20_control';%\8_6_14 new\8_6_14_cno\';
-% analysisDir         = '..\..\..\datasets\biomed\D8\8_6_14_21-60_cno';%\8_6_14 new\8_6_14_cno\';
+analysisDir         = '..\..\..\datasets\biomed\D8\8_6_14_1-20_control';%\8_6_14 new\8_6_14_cno\';
+analysisDir         = '..\..\..\datasets\biomed\D8\8_6_14_21-60_cno';%\8_6_14 new\8_6_14_cno\';
 % analysisDir         = '..\..\..\datasets\biomed\D8\7_23_14_1-35_control';%\8_6_14 new\8_6_14_cno\';
 % analysisDir         = '..\..\..\datasets\biomed\D8\8_4_14_1-25_control';%\8_6_14 new\8_6_14_cno\';
-analysisDir         = '..\..\..\datasets\biomed\M2\4_4_14';%\8_6_14 new\8_6_14_cno\';
+% analysisDir         = '..\..\..\datasets\biomed\M2\4_4_14';%\8_6_14 new\8_6_14_cno\';
 
-loadBehaveData = true;
+loadBehaveData = false;
 % special trial (repetition) to show (Change it if you need)
 trialIndShow        = 1:40;
 % frame rate ratio between Two Photon imaging and Behavior
