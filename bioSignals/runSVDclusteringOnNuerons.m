@@ -2,226 +2,113 @@ clc;
 clear all;
 close all hidden;
 close all;
+dbstop if error;
+addpath(('../../SvdKmeansCluster/'));
+addpath('../../3D_Questionnaire/Questionnaire/');
+addpath('../../PCAclustering/');
+addpath('../../Matlab_Utils/');
 
-% addpath(genpath('..\3DQuest\3DQuest\Questionnaire'));
-embedded   = false;
-dataType = 'Animation'; % 'probField' 'Animation' 'chirp'
-coupling = true;
-randData = false;
-plotFlag = false;
-plotFlagKmeans = false;
-useFit = false;
-sizeRows = 300;
-sizeCols = 400;
-maxTime  = 200;
 
-i = linspace(0,2*pi,sizeRows);
-j = linspace(0,2*pi,sizeCols);
-t = linspace(0.2,1.2,maxTime);
-[J,I,T] = meshgrid(j,i,t);
+params(1).k = 8;
+params(1).embedded = true;
+params(1).threshold = 0.4;
+params(1).title = 'Neurons';
+params(1).verbose = 1;
 
-if (randData)
-    switch dataType
-        case 'Animation'
-            load('Data3D/DataAnimation')
-            % implay(dataOrig)
-            [sizeRows,sizeCols,maxTime] = size(dataOrig);
-        case 'probField'
-            probField = 0.5*(1+sin((2.*I+2.*J+5*T+3*I.*J.*T)/2));
-            % probField = getWave(sizeRows,sizeCols,maxTime);
-            clear I J T
-            dataOrig    = bsxfun(@gt,probField,rand(sizeRows,sizeCols,maxTime));
-            dataOrig    = double(dataOrig)*2-1;
-        case 'chirp'
-            dataOrig = getChirp;
-            [sizeRows,sizeCols,maxTime] = size(dataOrig);
+params(2).k = 5;
+params(2).embedded = false;
+params(2).threshold = 0.05;
+params(2).title = 'Time';
+params(2).verbose = 1;
 
-    end
-   
-    shuffleRows = randperm(sizeRows);
-    shuffleCols = randperm(sizeCols);
-    shuffleTime = randperm(maxTime);
-    data = double(dataOrig(shuffleRows,shuffleCols,shuffleTime));
+params(3).k = linspace(10,50,5);
+params(3).embedded = false;
+params(3).threshold = 0.7;
+params(3).title = 'Trials';
+params(3).verbose = 1;
 
-else
-     %load('Data3D\workspaceAnimation3Compact0');
-     %[sizeRows,sizeCols,maxTime] = size(data);
-     
-%     filePrefix = 'D30/8_17_14_46-80'; %0.55
-%     filePrefix = 'D30/8_17_14_1-45'; %0.55
-    filePrefix = '../../datasets\biomed\D30/8_12_14_1-40'; % 0.5
-%     filePrefix = 'D30/8_15_13_1-35'; %0.5
 
+filePrefix = '../../../datasets\biomed\D30/8_12_14_1-40'; % 0.5
+[matrix, ~, NeuronsLabels] = loadNeuronsData('../../../datasets\biomed\D30/', {'8_12_14_1-40'}, 360);
+load(strcat(filePrefix,'sensors_dat_titles.mat'));
+load('../../svdKmeansCluster/D30/commonIndex')
+[sizeRows,sizeCols,maxTime] = size(matrix);
+shuffleRows = 1:sizeRows;
+shuffleCols = 1:sizeCols;
+shuffleTime = 1:maxTime;
+data = matrix;
+dataOrig = data;
+%% search parameters
+k_t_vec = [2 3 4 5 6 7];
+k_r_vec = [5 6 7 8 9 10];
+l = 1;
+
+for threshold = 0.4:0.05:0.65
     
-        
-%     load(strcat(filePrefix,'matrix.mat'));
-%     load(strcat(filePrefix,'sensors_dat_titles.mat'));
-%     load('D30/commonIndex')
-%     matrix_8_15_13 = matrix(index8_15_13,:,:);
-%     filePrefix = 'D30/8_12_14_1-40';
-%     load(strcat(filePrefix,'matrix.mat'));
-%     load(strcat(filePrefix,'sensors_dat_titles.mat'));
-%     matrix_8_12_14 = matrix(index8_12_14,:,:);
-%     
-%     matrix = zeros([size(matrix_8_15_13,1) size(matrix_8_15_13,2) size(matrix_8_15_13,3)+size(matrix_8_12_14,3)]);
-%     matrix(:,:,1:size(matrix_8_15_13,3)) = matrix_8_15_13;
-%     matrix(:,:,size(matrix_8_15_13,3)+1:end) = matrix_8_12_14;
-    [matrix, expLabel, NeuronsLabels] = loadNeuronsData('../../../datasets\biomed\D30', {'8_12_14_1-40'}, 360);
-    [sizeRows,sizeCols,maxTime] = size(matrix);
-    shuffleRows = 1:sizeRows;
-    shuffleCols = 1:sizeCols;
-    shuffleTime = 1:maxTime;
-    data = matrix;
-    dataOrig = data;
-end     
-
-
-% compute principal components and classes of Rows
-% title_ = 'Rows';
-% threshold = 0.05;
-% hirarchNum = 5;
-% % k = linspace(10,50,hirarchNum);
-% k=10;
-% dataDimPerm{1} =permute(data,[3 2 1]);
-% for i = 1:length(k);
-%     [classRows{i},vectorsRows{i},affinityRows{i}] = svdClass(dataDimPerm,k(i),embedded,threshold,title_,plotFlagKmeans);
-% end
-
-
-iter = 1;
-figure;
-for k_t = 5%2:7
-for k_r = 8%5:10
-    
-% compute principal components and classes of Time
-%k_t = 5;
-title_ = 'Time';
-threshold = 0.05;
-dataDimPerm{1} = data;
-[classTime,vectorsTime,affinityTime] = svdClass(dataDimPerm,k_t,embedded,threshold,title_,plotFlagKmeans);
-clear dataDimPerm
-
-% compute principal components and classes of cloumns
-hirarchNum = 5;
-k_c = linspace(10,50,hirarchNum);
-%k_c=35;
-title_ = 'Columns';
-threshold = 0.7;
-dataDimPerm{1} = permute(data,[1 3 2]);
-for i = 1:length(k_c)
-    [classCols{i},vectorsCols{i},affinityCols{i}] = svdClass(dataDimPerm,k_c(i),embedded,threshold,title_,plotFlagKmeans);
-end
-clear dataDimPerm
-
-if(~coupling)
-    % compute principal components and classes of cloumns
-%     k_t = 5;
-%     title_ = 'Time';
-%     threshold = 0.05;
-%     dataDimPerm{1} = data;
-%     [classTime,vectorsTime,affinityTime,eigValsTime] = svdClass(dataDimPerm,k_t,embedded,threshold,title_,plotFlagKmeans);
-%     showEmbedding(vectorsTime(:,2:4),eigValsTime,shuffleTime,title_);
-
-    % compute principal components and classes of Rows
-    k_r = 10;
-    title_ = 'Rows';
-    threshold = 0.05;
-    dataDimPerm{1} = permute(data,[3 2 1]);
-    [classRows,vectorsRows,affinityRows] = svdClass(dataDimPerm,k_r,embedded,threshold,title_,plotFlagKmeans);
-    clear dataDimPerm
-    
-    OrganizeData3D( dataOrig, data, affinityRows, affinityCols{3}, affinityTime, shuffleRows, shuffleCols, shuffleTime, 4, 4, 4 )
-    return
-end
-
-for i=1:1
-    
-%     dataCoupeledCols = coupleData(data,classTime,classRows);
-% 
-%     % compute principal components and classes of cloumns
-%     k = 35;
-%     title_ = 'Columns';
-%     threshold = 0.05;
-%     dataDimPerm{1} = permute(dataCoupeledCols,[1 3 2]);
-%     [classCols,vectorsCols,affinityCols,eigValsCols] = svdClass(dataDimPerm,k,embedded,threshold,title_,plotFlagKmeans);
-    % showEmbedding(vectorsCols(:,2:4),eigValsCols,shuffleCols,title_);
- 
-    
-    
-%     for j=1:length(k)
-%             dataCoupeledTime = coupleData(permute(data,[1 3 2]),classCols{j},classRows{j});
-%             dataDimPerm{j} = permute(dataCoupeledTime,[1 3 2]);
-%     end
-%    
-%     % compute principal components and classes of Time
-%     k = [10 20 30 40];
-%     title_ = 'Time';
-%     for j = 1:length(k)
-%     [classTime{j},vectorsTime{j},affinityTime{j}] = svdClass(dataDimPerm,k(j),embedded,threshold,title_,plotFlagKmeans);
-%     end
-    
-    
-
-%     clear dataDimPerm
-%     k = [10 20 30 40];
-%     title_ = 'Time';
-%     for j=1:length(k)
-%         dataCoupeledCols = coupleData(data,classTime{j},classRows{j});
-%         dataDimPerm{j} = permute(dataCoupeledCols,[1 3 2]);
-%     end
-%     k=35;
-%     [classCols,vectorsCols,affinityCols] = svdClass(dataDimPerm,k,embedded,threshold,title_,plotFlagKmeans);
-
-    for j=1:length(k_c)
-            dataCoupeledTime = coupleData(permute(data,[2 1 3]),classTime,classCols{j});
-            dataDimPerm{j} = permute(dataCoupeledTime,[1 3 2]);
-    end
-    % compute principal components and classes of Rows
-    %k_r = 10;
-    title_ = 'Rows';
-    threshold = 0.55;
-    [classRows,vectorsRows,affinityRows] = svdClass(dataDimPerm,k_r,embedded,threshold,title_,plotFlagKmeans);
-    
-    if(i==1)
-        plotFlagKmeans = false;
+    for k_t = k_t_vec
+        params(2).k = k_t;
+        for k_r = k_r_vec
+            params(1).k = k_r;
+            params(1).threshold = threshold;
+            [class, vectors, affinity] = svdClustering3D(data, params);
+            if length(unique(class{1})) == 9
+%                 disp([k_t, k_r]);
+%                 figure;
+%                 [row_vecs, row_vals] = CalcEigs(affinity{1}, 4);
+%                 embedding = row_vecs*row_vals;
+%                 %             subplot(length(k_t_vec), length(k_r_vec), l);
+%                 plotEmbeddingWithColors(embedding, class{1}, num2str(l));
+%                 colorbar off;
+                disp(['l = ' num2str(l) ' Neurons - k_t = ' num2str(k_t) ' k_r = ' num2str(k_r) ' threshold = ' num2str(threshold)]);
+%                 xlim([-0.1 0.3])
+%                 xlim([-0.05 0.1])
+%                 view([-115 10]);
+%                 drawnow;
+                dummyTree.clustering = class{1};
+                [meanMat, allMat, meanMatAlltrials] = getCentroidsByTree(dummyTree, data, NeuronsLabels, NeuronsLabels);
+%                 plotByClustering(allMat,  num2str(l));drawnow;
+                plotByClustering(meanMat,  num2str(l));drawnow;                
+                l = l + 1;
+            end
+        end
     end
 end
 
+%% Run on selected parameters
+% 1  k_t = 3 k_r = 9 threshold = 0.4 not good
+% 3  k_t = 5 k_r = 7 threshold = 0.4 best
+% 5  k_t = 7 k_r = 8 threshold = 0.4 not good
+% 7  k_t = 3 k_r = 8 threshold = 0.45 not good
+% 11 k_t = 7 k_r = 9 threshold = 0.45 not good
+% 15 k_t = 7 k_r = 9 threshold = 0.5 maybe
+params(2).k = 5;
+params(1).k = 7;
+params(1).threshold = 0.4;
+[class, vectors, affinity] = svdClustering3D(data, params);
+dummyTree.clustering = class{1};
+[meanMat, allMat, meanMatAlltrials] = getCentroidsByTree(dummyTree, data, NeuronsLabels, NeuronsLabels);
+% plotByClustering(allMat,  ['8/12/14 Organized By SVD Clustering']);
 
-threshold = 0.4;%[0.4 0.45 0.5 0.55 0.6 0.65];%0.05:0.05:0.95;
 
-for i = 1:length(threshold)
-    
-    embedded = true;
-    [classRows,vectorsRows,affinityRows] = svdClass(dataDimPerm,k_r,embedded,threshold(i),title_,plotFlagKmeans);
-    
-    classNum = length(unique(classRows));
-    colors = jet(classNum);
-    color_mat = zeros(length(classRows),3);
-    
-    for j =1:classNum
-        classIndex = find(classRows == j);
-        classSize = length(classIndex);
-        color_mat(classRows == j,:) = repmat(colors(j,:),[classSize 1]);
+[X1, ~, NeuronsLabels1] = loadNeuronsData('../../../datasets\biomed\D30/', {'8_15_13_1-35'}, 360);
+[X2, ~, NeuronsLabels2] = loadNeuronsData('../../../datasets\biomed\D30/', {'8_17_14_1-45'}, 360);
+[X3, ~, NeuronsLabels3] = loadNeuronsData('../../../datasets\biomed\D30/', {'8_17_14_46-80'}, 360);
 
-    end    
-    
-    [row_vecs, row_vals] = CalcEigs(affinityRows, 4);
-    embedding = row_vecs*row_vals;
-    subplot(6, 6, iter)
-    scatter3(embedding(:,1), embedding(:,2), embedding(:,3), 30, color_mat, 'filled');
-    title(sprintf('Neurons Embedding thresh=%.1f k_r=%.1f k_t=%.1f',threshold(i),k_r,k_t));
-    xlabel('\psi_1'), ylabel('\psi_2'), zlabel('\psi_3'), hold on
-    xlim([-0.1 0.3])
-    xlim([-0.05 0.1])
-    view([-115 10])
-    iter = iter + 1;
-    
-end
-clear dataDimPerm
+[meanMat1, allMat1, meanMatAlltrials1] = getCentroidsByTree(dummyTree, X1(:, :, :), NeuronsLabels, NeuronsLabels1);
+[meanMat2, allMat2, meanMatAlltrials2] = getCentroidsByTree(dummyTree, X2(:, :, :), NeuronsLabels, NeuronsLabels2);
+[meanMat3, allMat3, meanMatAlltrials3] = getCentroidsByTree(dummyTree, X3(:, :, :), NeuronsLabels, NeuronsLabels3);
 
-end
-end
+plotByClustering(meanMat,  ['8/12/14 Organized By SVD Clustering']);
+plotByClustering(meanMat1,  ['8/15/13 Organized By SVD Clustering Of 8/12/14']);
+plotByClustering(meanMat2,  ['8/17/14 Part 1 Organized By SVD Clustering Of 8/12/14']);
+plotByClustering(meanMat3,  ['8/17/14 Part 2 Organized By SVD Clustering Of 8/12/14']);
+
+
+plotByClustering(allMat,  ['8/15/13 Organized By SVD Clustering Of 8/12/14']);
+plotByClustering(allMat,  ['8/17/14 Part 1 Organized By SVD Clustering Of 8/12/14']);
+plotByClustering(allMat,  ['8/17/14 Part 2 Organized By SVD Clustering Of 8/12/14']);
+plotByClustering(allMat,  ['8/12/14 Organized By SVD Clustering']);
+
 
 % filePrefix = strcat('D30/ClassResults2',filePrefix(4:end)); %0.5
 
