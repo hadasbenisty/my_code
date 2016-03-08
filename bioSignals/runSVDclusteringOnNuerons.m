@@ -39,40 +39,40 @@ shuffleTime = 1:maxTime;
 data = matrix;
 dataOrig = data;
 %% search parameters
-k_t_vec = [2 3 4 5 6 7];
-k_r_vec = [5 6 7 8 9 10];
-l = 1;
-
-for threshold = 0.4:0.05:0.65
-    
-    for k_t = k_t_vec
-        params(2).k = k_t;
-        for k_r = k_r_vec
-            params(1).k = k_r;
-            params(1).threshold = threshold;
-            [class, vectors, affinity] = svdClustering3D(data, params);
-            if length(unique(class{1})) == 9
-%                 disp([k_t, k_r]);
-%                 figure;
-%                 [row_vecs, row_vals] = CalcEigs(affinity{1}, 4);
-%                 embedding = row_vecs*row_vals;
-%                 %             subplot(length(k_t_vec), length(k_r_vec), l);
-%                 plotEmbeddingWithColors(embedding, class{1}, num2str(l));
-%                 colorbar off;
-                disp(['l = ' num2str(l) ' Neurons - k_t = ' num2str(k_t) ' k_r = ' num2str(k_r) ' threshold = ' num2str(threshold)]);
-%                 xlim([-0.1 0.3])
-%                 xlim([-0.05 0.1])
-%                 view([-115 10]);
-%                 drawnow;
-                dummyTree.clustering = class{1};
-                [meanMat, allMat, meanMatAlltrials] = getCentroidsByTree(dummyTree, data, NeuronsLabels, NeuronsLabels);
-%                 plotByClustering(allMat,  num2str(l));drawnow;
-                plotByClustering(meanMat,  num2str(l));drawnow;                
-                l = l + 1;
-            end
-        end
-    end
-end
+% k_t_vec = [2 3 4 5 6 7];
+% k_r_vec = [5 6 7 8 9 10];
+% l = 1;
+% 
+% for threshold = 0.4:0.05:0.65
+%     
+%     for k_t = k_t_vec
+%         params(2).k = k_t;
+%         for k_r = k_r_vec
+%             params(1).k = k_r;
+%             params(1).threshold = threshold;
+%             [class, vectors, affinity] = svdClustering3D(data, params);
+%             if length(unique(class{1})) == 9
+% %                 disp([k_t, k_r]);
+% %                 figure;
+% %                 [row_vecs, row_vals] = CalcEigs(affinity{1}, 4);
+% %                 embedding = row_vecs*row_vals;
+% %                 %             subplot(length(k_t_vec), length(k_r_vec), l);
+% %                 plotEmbeddingWithColors(embedding, class{1}, num2str(l));
+% %                 colorbar off;
+%                 disp(['l = ' num2str(l) ' Neurons - k_t = ' num2str(k_t) ' k_r = ' num2str(k_r) ' threshold = ' num2str(threshold)]);
+% %                 xlim([-0.1 0.3])
+% %                 xlim([-0.05 0.1])
+% %                 view([-115 10]);
+% %                 drawnow;
+%                 dummyTree.clustering = class{1};
+%                 [meanMat, allMat, meanMatAlltrials] = getCentroidsByTree(dummyTree, data, NeuronsLabels, NeuronsLabels);
+% %                 plotByClustering(allMat,  num2str(l));drawnow;
+%                 plotByClustering(meanMat,  num2str(l));drawnow;                
+%                 l = l + 1;
+%             end
+%         end
+%     end
+% end
 
 %% Run on selected parameters
 % 1  k_t = 3 k_r = 9 threshold = 0.4 not good
