@@ -59,7 +59,7 @@ genderNum = genderNum(sortedinds);
 dialectNum = dialectNum(sortedinds);
 
 x_unpadded = {x_unpadded{sortedinds}};
-
+fs = 16e3;
 nfft = fs * framesize;
 % padd with zeros because the speach signals do share the same rate
 maxsize=0;

@@ -2,92 +2,92 @@ close all;
 clear all;
 clc;
 dbstop if error;
-addpath(genpath('../../3D_Questionnaire/Questionnaire'));
-addpath(genpath('../../3D_Questionnaire/utils'));
-addpath(genpath('../../PCAclustering'));
-addpath(genpath('../gen_utils'));
-addpath(genpath('../tiling'));
 
 files = {  '8_6_14_1-20_control' '8_4_14_1-25_control'};%'8_6_14_21-60_cno' 
 rng(73631);
-%% Init params
-dorandperm_col = false;
-dorandperm_row = false;
-dorandperm_trials = false;
-%% Load Data
+experiment = 'D8';
+dims4quest = 3;
 
 datapth = '..\..\..\datasets\biomed\D8';
-
+files = { '8_6_14_1-20_control' '8_6_14_21-60_cno'};
 nt = 120;
+toneVec = [ones(1,40) 100*ones(1, 80)];
 [X, expLabel, NeuronsLabels] = loadNeuronsData(datapth, files, nt);
 
+selectedTimeFrams=2:size(X, 2);
+data = X(:, selectedTimeFrams, :);
+toneVec=toneVec(selectedTimeFrams);
+istopdown = true;
 
-[nr, nt, nT] = size(X);
-dataFor3DQ = X(:,:,1:20);
+params = SetGenericDimsQuestParams(dims4quest, istopdown);
+    runningOrder = [3 1 2];
+    params.data.over_rows = false;
 
-%% Run Qu. 3D
-params  = SetGenericQuestParamsD8;
-% making sure that the timing tree is not too complicated
-params.row_tree.treeDepth=5;
-[ col_tree, trial_tree, row_tree,  col_dual_aff, trial_dual_aff, row_dual_aff] = RunGenericQuestionnaire3D( params, permute(dataFor3DQ, [2 3 1]) );
+    for ind = 1:dims4quest
+        params.emd{ind}.beta = .1;
+        params.tree{ind}.splitsNum = 2;
+        params.tree{ind}.treeDepth = 6;
+        
+    end
+    params.data.over_rows = true;
+    params.n_iters = 1;
+
+    params.init_aff{3}.thresh = .1;
+    params.tree{1}.runOnEmbdding = true;
+params.tree{2}.runOnEmbdding = true;
+params.tree{3}.runOnEmbdding = true;
+params.data.to_normalize = true;
+params.data.normalization_type = 'by_std';
+params.verbose = 2;
+[ Trees, dual_aff, init_aff ] = RunGenericDimsQuestionnaire( params, permute(data,(runningOrder) ) );
+
 figure;
-subplot(1,2,1);
-[vecs_t, vals] = CalcEigs(threshold(col_dual_aff, 0.0), 3);
-plotEmbeddingWithColors(vecs_t * vals, 1:size(dataFor3DQ, 2), 'Time Embedding');
-subplot(1,2,2);
-plotEmbeddingWithColors(vecs_t * vals, [ones(1, 40) 100*ones(1, 80)], 'Time Colored by Tone');
+subplot(2,1,1);
+plotTreeWithColors(Trees{runningOrder == 2}, toneVec);
+title('Time Tree; Colored By Tone');
+
+[vecs, vals] = CalcEigs(threshold(dual_aff{runningOrder==2}, 0.1), 4);
+subplot(2,1,2);
+plotEmbeddingWithColors(vecs * vals, toneVec, 'Time Colored By Tone - ');view(22, 32);
 
 figure;
-[vecs_r, vals] = CalcEigs(threshold(row_dual_aff, 0.0), 3);
-plotEmbeddingWithColors(vecs_r * vals, 1:size(dataFor3DQ, 1), 'Nuerons Embedding');
-figure;
-[vecs_T, vals] = CalcEigs(threshold(trial_dual_aff, 0.0), 2);
-plotEmbeddingWithColors(vecs_T * vals, 1:size(dataFor3DQ, 3), 'Trials Embedding');
-
-figure;    subplot(3,1,1);
-plotTreeWithColors(col_tree, 1:length(col_dual_aff));    title('Time Col Tree');
-subplot(3,1,2);    plotTreeWithColors(row_tree, 1:length(row_dual_aff));    title('Nuerons Tree')
-subplot(3,1,3);    plotTreeWithColors(trial_tree, 1:length(trial_dual_aff));    title('Trialsl Tree');
+subplot(2,1,1);
+plotTreeWithColors(Trees{runningOrder == 3}, [ones(25,1); 2*ones(0, 1); 3*ones(20,1); 4*ones(15,1)]);
+title('Trials Tree; Colored By CNO State (Before, During & After)');
+[vecs, vals] = CalcEigs(threshold(dual_aff{runningOrder==3}, 0.0), 3);
+subplot(2,1,2);plotEmbeddingWithColors(vecs * vals, [ones(25,1); 2*ones(0, 1); 3*ones(20,1); 4*ones(15,1)], 'Trials - ');
 
 %% Order by tree
+dataN = NormalizeData(permute(data, runningOrder), params.data);
+[~, ic] = sort(runningOrder);
+dataN = permute(dataN, ic);
 
+neuron_tree_level = 2;
+[meanMat, allMat, meanMatAlltrials] = getCentroidsByTree(Trees{runningOrder==1}{neuron_tree_level}, dataN(:,:,1:10), NeuronsLabels, NeuronsLabels);
+affine = feval(params.init_aff{runningOrder==1}.initAffineFun, permute(meanMatAlltrials, runningOrder), params.init_aff{1});
+[vecs, vals] = CalcEigs(affine, 5);
+classes_order = OrganizeDiffusion3DbyOneDim( meanMatAlltrials, vecs*vals );
 
-meanData = mean(meanMat_beforeCNO, 3);
-[~, row_order] = sort(row_tree{2}.clustering);
-[~, col_order] = sort(col_tree{2}.clustering);
-orderedData = meanData(row_order, :);
-orderedData = orderedData(:, col_order);
+normalized_centroids = plotByClustering(allMat(classes_order),  '');%selectedTimeFrams
+      
+
+[~, neurons_order] = sort(Trees{runningOrder==1}{2}.clustering);
+[~, time_order] = sort(Trees{runningOrder==2}{2}.clustering);
+orderedData = dataN(neurons_order, :, 1);
+orderedData = orderedData(:, time_order, 1);
 
 % prepare trees for recursion
-for treeLevel = 1:length(row_tree)
-    row_orderedtree{treeLevel} = row_tree{treeLevel};
-    row_orderedtree{treeLevel}.clustering = row_tree{treeLevel}.clustering( row_order);
+for treeLevel = 1:length(Trees{runningOrder==1})
+    row_orderedtree{treeLevel} = Trees{runningOrder==1}{treeLevel};
+    row_orderedtree{treeLevel}.clustering = Trees{runningOrder==1}{treeLevel}.clustering( neurons_order);
 end
-for treeLevel = 1:length(col_tree)
-    col_orderedtree{treeLevel} = col_tree{treeLevel};
-    col_orderedtree{treeLevel}.clustering = col_tree{treeLevel}.clustering( col_order);
+for treeLevel = 1:length(Trees{runningOrder==2})
+    col_orderedtree{treeLevel} = Trees{runningOrder==2}{treeLevel};
+    col_orderedtree{treeLevel}.clustering = Trees{runningOrder==2}{treeLevel}.clustering( time_order);
 end
 
-figure;
-subplot(2,2,1);
-imagesc(meanData);title('Orig Data');
-xlabel('Time');
-set(gca, 'YTick', 1:length(NeuronsLabels));
-set(gca, 'YTickLabel',NeuronsLabels);
-subplot(2,2,4);
-imagesc(orderedData);title('Ordered Data');
-xlabel('Time');
-set(gca, 'YTick', 1:length(NeuronsLabels));
-set(gca, 'YTickLabel',NeuronsLabels(row_order));
-
-subplot(2,2,3);
-plotTreeWithColors(row_orderedtree, 1:size(meanData,1));
-title('Row Tree'); colorbar('off')
-view(-90,90)
-subplot(2,2,2);
-plotTreeWithColors(col_orderedtree, 1:size(meanData,2))
-title('Col Tree');colorbar('off')
-
+mkNewFolder('D8tilingSols');
+files_prefix = 'D8tilingSols\solsD30_';
 
 ind2data = 1;
 minErr = Inf;
@@ -97,9 +97,9 @@ solutionTiling = [];
 figure;
 clc;
 l = 1;
-vol_v = {[  1e3:-1:361 359:-1:109 107:-1:100  ]};
+vol_v = {setdiff([  1000:-1:100  ], size(orderedData))};
 for vol_i = 1:length(vol_v)
-    [minCurrErr, currSolutionTiling] = loopTiling2D(orderedData, row_orderedtree, col_orderedtree, vol_v{vol_i});
+    [minCurrErr, currSolutionTiling] = loopTiling2D(orderedData, row_orderedtree, col_orderedtree, vol_v{vol_i}, files_prefix);
 
 %     [minCurrErr, tilingCurrRes, currSolutionTiling] = recursiveTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v(vol_i), ind2data, tiling, solutionTiling, Inf);
     if minCurrErr < inf
@@ -110,6 +110,19 @@ for vol_i = 1:length(vol_v)
     end
 end
 
+files = 'solsD8_';
+betavec = -1:.2:1;
+for b = 1:length(betavec)
+%     figure;
+    
+for k = 1:15
+%     subplot(5,3,k)
+  load([files num2str(k)]);
+  currErr(k,b) = evalTilingErr(orderedData, sol, betavec(b), betavec(b));
+%   imagesc(sol.isbusy);title([num2str(betavec(b)) ' ' num2str(currErr(k,b)) ' ' num2str(max(max(sol.isbusy)))]);
+  
+end
+end
 [~,a]=sort(col_order);
 for ci = 1:length(unique(solutionTilingRes.isbusy(:)))
    [ind_i, ind_j] = find(solutionTilingRes.isbusy == ci) ;

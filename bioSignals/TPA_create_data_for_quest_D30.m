@@ -35,17 +35,26 @@
 %analysisDir         = 'C:\Uri\DataJ\Janelia\Analysis\d13\14_08_14\';
 %analysisDir         = 'C:\LabUsers\Uri\Data\Janelia\Analysis\m2\4_4_14';
 
-% analysisDir         = '..\..\..\datasets\biomed\D30\8_12_14_1-40';%\8_6_14 new\8_6_14_cno\';
+analysisDir         = '..\..\..\datasets\biomed\D30\8_12_14_1-40';%\8_6_14 new\8_6_14_cno\';
+analysisDir         = '..\..\..\datasets\biomed\D30new\8_12_14_1-40';
+
 % analysisDir         = '..\..\..\datasets\biomed\D30\8_17_14_1-45';%\8_6_14 new\8_6_14_cno\';
 % analysisDir         = '..\..\..\datasets\biomed\D30\8_17_14_46-80';%\8_6_14 new\8_6_14_cno\';
 % analysisDir         = '..\..\..\datasets\biomed\D30\8_15_13_1-35';%\8_6_14 new\8_6_14_cno\';
-analysisDir         = '..\..\..\datasets\biomed\D8\8_6_14_1-20_control';%\8_6_14 new\8_6_14_cno\';
-analysisDir         = '..\..\..\datasets\biomed\D8\8_6_14_21-60_cno';%\8_6_14 new\8_6_14_cno\';
+% analysisDir         = '..\..\..\datasets\biomed\D8\8_6_14_1-20_control';%\8_6_14 new\8_6_14_cno\';
+% analysisDir         = '..\..\..\datasets\biomed\D8\8_6_14_21-60_cno';%\8_6_14 new\8_6_14_cno\';
 % analysisDir         = '..\..\..\datasets\biomed\D8\7_23_14_1-35_control';%\8_6_14 new\8_6_14_cno\';
 % analysisDir         = '..\..\..\datasets\biomed\D8\8_4_14_1-25_control';%\8_6_14 new\8_6_14_cno\';
 % analysisDir         = '..\..\..\datasets\biomed\M2\4_4_14';%\8_6_14 new\8_6_14_cno\';
+% analysisDir         = 'C:\Users\Hadas\Documents\work\datasets\biomed\D10\8_6_14_1-20_control';
+% analysisDir         = 'C:\Users\Hadas\Documents\work\datasets\biomed\D13\6_28_14_1-21';
+% analysisDir         = 'C:\Users\Hadas\Documents\work\datasets\biomed\D13\7_1_14_1-16';
+% analysisDir         = 'C:\Users\Hadas\Documents\work\datasets\biomed\D13\7_21_14_1-30';
+% analysisDir         = 'C:\Users\Hadas\Documents\work\datasets\biomed\D13\7_24_14_1-20';
+% analysisDir         = '../../../datasets/biomed/D10/8_6_14_1-20_control/';
+% analysisDir         ='../../../datasets\biomed\D10\8_6_14_21-60_cno';
 
-loadBehaveData = false;
+loadBehaveData = true;
 % special trial (repetition) to show (Change it if you need)
 trialIndShow        = 1:40;
 % frame rate ratio between Two Photon imaging and Behavior

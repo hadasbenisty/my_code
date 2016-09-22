@@ -45,8 +45,8 @@ title('Data');
 [row_tree, col_tree, row_dual_aff, col_dual_aff] = RunQuestionnaire(params, data);
 
 %% Visualization
-[vecs_col, vals_col] = CalcEigs(col_dual_aff, 4); 
-[vecs_row, vals_row] = CalcEigs(row_dual_aff, 4); 
+[vecs_col, vals_col] = CalcEigs(col_dual_aff, 4);
+[vecs_row, vals_row] = CalcEigs(row_dual_aff, 4);
 subplot(2,1,1);plotEmbeddingWithColors(vecs_col*vals_col, 1:size(vecs_col,1), 'Col')
 subplot(2,1,2);plotEmbeddingWithColors(vecs_row*vals_row, 1:size(vecs_row,1), 'Row')
 [ row_order ] = OrganizeDiffusion3DbyOneDim( data, vecs_row*vals_row );
@@ -93,55 +93,82 @@ tiling.isbusy = zeros(size(orderedData, 1), size(orderedData, 2), 1);
 tiling.isLeader = zeros(size(orderedData, 1), size(orderedData, 2), 1);
 solutionTiling = [];
 figure;
-clc;
-l = 1;
-vol_v = {[8 16] [10 12]};
+ind2data = 1;minVal=4;
+figure;
+maxVal = 1e3;
+p1.vol = getVolsFromTrees(col_orderedtree, row_orderedtree, minVal, maxVal);
+p1.vol = setdiff(p1.vol, size(data).'*[1:100]);
+p1.vol = sort(p1.vol, 'ascend');
+p1.vol = sort(p1.vol, 'descend');
 
-for vol_i = 1:length(vol_v)
-    [minCurrErr, tilingCurrRes, currSolutionTiling] = recursiveTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v{vol_i}, ind2data, tiling, solutionTiling, Inf);
-    [minCurrErr1, currSolutionTiling1] = loopTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v{vol_i});
-    
-    if minCurrErr1 ~= minCurrErr
-        if minCurrErr~= inf
-            if max(max(abs(currSolutionTiling.isbusy - currSolutionTiling1.isbusy)))~=0
-                error('s');
+p1.beta_col = 0;
+p1.beta_row = 0;
+p1.verbose = 1;
+%             p1.err_fun = @evalTilingErr;
+p1.err_fun = @evalTilingErrTauMeas;
+tau = 0.1:0.1:1.9;
+for ti = 1:length(tau)
+p1.tau = tau(ti);
+normData = orderedData/sqrt(sum(sum(orderedData.^2)));
+
+[minCurrErr(ti), currSolutionTiling{ti}] = loopTiling2DEfficient(normData, row_orderedtree, col_orderedtree, p1);
+[err(ti), meanTiled{ti}, taumeas(ti), b(ti)] = evalTilingErrTauMeas(normData, currSolutionTiling{ti}, p1);
+figure;plotTiledData(normData, meanTiled{ti}, [], currSolutionTiling{ti}.isbusy, num2str(p1.tau))
+
+end
+%% Evaluate the coefficients and their barriers
+
+d = zeros(numel(normData));
+for n1 = 1:numel(normData)
+    disp(n1);
+    for n2 = 1:numel(normData)
+        
+        [I1,J1] = ind2sub(size(normData),n1);
+        [I2,J2] = ind2sub(size(normData),n2);
+        if I1 == J1 || I2 == J2
+            continue;
+        end
+        for ki=1:length(col_orderedtree)
+            if row_orderedtree{ki}.clustering(I1)==row_orderedtree{ki}.clustering(I2)
+                Ni = row_orderedtree{ki}.folder_sizes( row_orderedtree{ki}.clustering(I2));
+                break;
             end
         end
-    end
-    if minCurrErr < inf
-        volumeRes(l) = vol_v(vol_i);
-        minErr(l) = minCurrErr;
-        tilingRes(l) =   tilingCurrRes;
-        solutionTilingRes(l) = currSolutionTiling;
-        l = l + 1;
+        for kj=1:length(col_orderedtree)
+            if col_orderedtree{kj}.clustering(J1)==col_orderedtree{kj}.clustering(J2)
+                Nj = col_orderedtree{kj}.folder_sizes( col_orderedtree{kj}.clustering(J2));
+                break;
+            end
+        end
+        d(n1, n2) = Ni * Nj;
     end
 end
-%
-%
-% small_row_tree{1}.folder_count = 4;
-% small_row_tree{1}.folder_sizes = [1 1 1 1];
-% small_row_tree{1}.clustering = [1 2 3 4];
-% small_row_tree{1}.super_folders = [1 1 2 2];
-%
-% small_row_tree{2}.folder_count = 2;
-% small_row_tree{2}.folder_sizes = [2 2];
-% small_row_tree{2}.clustering = [1 1 2 2];
-% small_row_tree{2}.super_folders = [ 1 1];
-%
-% small_row_tree{3}.folder_count = 1;
-% small_row_tree{3}.folder_sizes = 4;
-% small_row_tree{3}.clustering = [1 1 1 1];
-% small_row_tree{3}.super_folders = [];
-%
-% small_col_tree = small_row_tree;
-% small_data = rand(4);
-% small_vol = 4;
-% ind2data = 1;
-% minErr = Inf;
-% tiling.isbusy = zeros(size(small_data, 1), size(small_data, 2), 1);
-% tiling.isLeader = zeros(size(small_data, 1), size(small_data, 2), 1);
-% solutionTiling = [];
-% figure;
-% clc;
-% [minCurrErr, tilingCurrRes, currSolutionTiling] = recursiveTiling2D(small_data, small_row_tree, small_col_tree, small_vol, 1, tiling, solutionTiling, Inf);
-% [minErr1, solutionTiling] = loopTiling2D(small_data, small_row_tree, small_col_tree, small_vol);
+
+distmat = squareform(pdist(normData(:), 'cityblock'));
+d(d==inf) = 0;
+
+for ti = 1:length(tau)
+tiles = unique(currSolutionTiling{ti}.isbusy(:));
+N = length(tiles);
+phi = zeros([size(data) N]);
+for n = 1:N
+    [ind1, inds2] = find(currSolutionTiling{ti}.isbusy == tiles(n));
+   phi(ind1, inds2,n) =  1;
+   A{ti}(n) = (sum(sum(phi(:,:,n))));  
+   phi(:,:,n) = phi(:,:,n)/sqrt(sum(sum(phi(:,:,n).^2))); 
+   c{ti}(n) = sum(sum(phi(:,:,n).*normData));
+end
+
+al = 0.1:0.1:1;
+for alind = 1:length(al)
+    
+    C = (distmat./(d.^al(alind)));
+C(isinf(C)) = 0;
+CH(ti, alind) = max(C(:));
+B(ti, alind) = CH(ti, alind)/N^(1/tau(ti)-0.5)*(sum(A{ti}.^tau(ti)))^(1/tau(ti));
+end
+% figure;plot(B)
+% hold all;
+% plot(c, 'k');title('Coefficients (black) and C_H*A_k^{\alpha+0.5}');
+
+end

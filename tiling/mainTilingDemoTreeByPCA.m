@@ -16,7 +16,7 @@ rng(654164);
 
 %% Data
 
-data = [1 1  1   1  2  2  3  3  3  3;...
+X = [1 1  1   1  2  2  3  3  3  3;...
     1 1  1   1  2  2  3  3  3  3;...
     4 4  8   8  11 11 11 11 80 80;...
     4 4  8   8  12 12 12  12 80 80;...
@@ -24,7 +24,7 @@ data = [1 1  1   1  2  2  3  3  3  3;...
     6 14 16  17 18 18 40 40 40 40;...
     6 14 16  17 70 70 70 70 90 90;...
     6 14 16  17 95 95 95 95 90 90];
-data = data + randn(size(data))*0.3;
+data = X + randn(size(X))*0.3;
 figure;
 imagesc(data);colorbar;
 title('Data');
@@ -40,25 +40,30 @@ col_alpha = .2;
 col_beta = 0;
 trial_alpha = .2;
 trial_beta = 0;
-params  = SetQuestPCAclusteringParams;
-
-[row_tree, col_tree] = RunQuestionnaireViaPCAclustering(params, data);
-
+% params  = SetQuestPCAclusteringParams;
+params = SetGenericDimsQuestParams(2, true);
+params.tree{1}.splitsNum=5;
+params.tree{2}.splitsNum=5;
+% params.tree{1}.clusteringAlgo = @MTSGClassWrapper;
+% params.tree{1}.min_cluster = 1;
+% params.tree{2}.clusteringAlgo = @MTSGClassWrapper;
+% params.tree{2}.min_cluster = 1;
+[ Trees, dual_aff ] = RunGenericDimsQuestionnaire( params, data  );
 %% Visualization
 
-[~, row_order] = sort(row_tree{2}.clustering);
-[~, col_order] = sort(col_tree{2}.clustering);
+[~, row_order] = sort(Trees{1}{2}.clustering);
+[~, col_order] = sort(Trees{2}{2}.clustering);
 orderedData = data(row_order, :);
 orderedData = orderedData(:, col_order);
 
 % prepare trees for recursion
-for treeLevel = 1:length(row_tree)
-    row_orderedtree{treeLevel} = row_tree{treeLevel};
-    row_orderedtree{treeLevel}.clustering = row_tree{treeLevel}.clustering( row_order);
+for treeLevel = 1:length(Trees{1})
+    row_orderedtree{treeLevel} = Trees{1}{treeLevel};
+    row_orderedtree{treeLevel}.clustering = Trees{1}{treeLevel}.clustering( row_order);
 end
-for treeLevel = 1:length(col_tree)
-    col_orderedtree{treeLevel} = col_tree{treeLevel};
-    col_orderedtree{treeLevel}.clustering = col_tree{treeLevel}.clustering( col_order);
+for treeLevel = 1:length(Trees{2})
+    col_orderedtree{treeLevel} = Trees{2}{treeLevel};
+    col_orderedtree{treeLevel}.clustering = Trees{2}{treeLevel}.clustering( col_order);
 end
 
 figure;
@@ -83,27 +88,30 @@ solutionTiling = [];
 figure;
 clc;
 l = 1;
-vol_v = {[8 16] [10 12]};
-
-for vol_i = 1:length(vol_v)
-    [minCurrErr, tilingCurrRes, currSolutionTiling] = recursiveTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v{vol_i}, ind2data, tiling, solutionTiling, Inf);
-    [minCurrErr1, currSolutionTiling1] = loopTiling2D(orderedData(:,:,1), row_orderedtree, col_orderedtree, vol_v{vol_i});
-    
-    if minCurrErr1 ~= minCurrErr
-        if minCurrErr~= inf
-            if max(max(abs(currSolutionTiling.isbusy - currSolutionTiling1.isbusy)))~=0
-                error('s');
-            end
-        end
-    end
-    if minCurrErr < inf
-        volumeRes(l) = vol_v(vol_i);
-        minErr(l) = minCurrErr;
-        tilingRes(l) =   tilingCurrRes;
-        solutionTilingRes(l) = currSolutionTiling;
-        l = l + 1;
-    end
+classes = unique(X);
+for ci=1:length(classes)
+    tilesSizes(ci) = length(find(X(:)==classes(ci)));
 end
+p1.vol = unique(tilesSizes);
+p1.vol = sort(p1.vol, 'ascend');
+
+p1.beta_col = 0;
+p1.beta_row = 0;
+p1.verbose = 2;
+%             p1.err_fun = @evalTilingErr;
+p1.err_fun = @evalTilingErrTauMeas;p1.tau = 0.1;
+tiling.isbusy=zeros(size(data));
+
+
+[minCurrErr, currSolutionTiling] = loopTiling2DEfficient(orderedData, row_orderedtree, col_orderedtree, p1);
+[minCurrErr1, tilingCurrRes1, currSolutionTiling1] = recursiveTiling2D(orderedData, row_orderedtree, col_orderedtree, p1.vol, 1, tiling, [], inf);
+
+[~, meanTiled] = evalTilingErr(X, currSolutionTiling, p1);
+figure;plotTiledData(orderedData, meanTiled, '', currSolutionTiling.isbusy, [ ' \tau = ' num2str(p1.tau)])
+
+[~, meanTiled1] = evalTilingErr(X, currSolutionTiling1, p1);
+figure;plotTiledData(orderedData, meanTiled1, '', currSolutionTiling1.isbusy, [ ' \tau = ' num2str(p1.tau)])
+
 %
 %
 % small_row_tree{1}.folder_count = 4;

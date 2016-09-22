@@ -6,7 +6,7 @@ clear all;
 clc;
 addpath(genpath('../Questionnaire'));
 addpath(genpath('../utils'))
-wavspath = '..\..\..\datasets\TIMIT\TEST';
+wavspath = '..\..\..\datasets\RAW\TEST';
 sentenceName = 'SA1';
 % set the seed for reproducibility
 rng(6548964);%356454
@@ -29,7 +29,7 @@ speakerNum=[];wordsNum=[];dialectNum=[];spkrind=1;
 for n = [3 6 8]%:length(dialects)
     speakers = dir(fullfile(wavspath, dialects(n).name));
     for m = [3 5 10]%:length(speakers)% [3 4 7 8] [3 8] - working nice for words separation
-        [rawspeach, fs] = wavread(fullfile(wavspath, dialects(n).name, speakers(m).name, [sentenceName '.WAV']));
+        [rawspeach, fs] = audioread(fullfile(wavspath, dialects(n).name, speakers(m).name, [sentenceName '.WAV']));
         [wordsSamples] = readWrdFile(fullfile(wavspath, dialects(n).name, speakers(m).name, [sentenceName '.WRD']), rawspeach);
         for selectedWordsind = selectedWords
             x_unpadded{end+1} = wordsSamples{selectedWordsind};

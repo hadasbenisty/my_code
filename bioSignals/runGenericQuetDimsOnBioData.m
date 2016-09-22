@@ -1,4 +1,4 @@
-% close all;
+close all;
 clear all;
 clc;
 dbstop if error;
@@ -7,7 +7,7 @@ addpath(genpath('../../3D_Questionnaire/utils'));
 addpath(genpath('../../PCAclustering'));
 addpath(genpath('../../Matlab_Utils/'));
 addpath(genpath('../tiling'));
-experiment = 'D8';
+experiment = 'D30';
 dims4quest = 3;
 switch experiment
     case 'D30'
@@ -42,8 +42,11 @@ dorandperm_trials = false;
 
 switch experiment
     case 'D8'
-        selectedTimeFrams = 35:60;
-%         selectedTimeFrams=1:size(X, 2);
+        params.tree{1}.runOnEmbdding = false;
+        params.tree{2}.runOnEmbdding = true;
+        params.tree{3}.runOnEmbdding = false;
+%         selectedTimeFrams = 35:60;
+        selectedTimeFrams=1:size(X, 2);
         data = X(:, selectedTimeFrams, :);
         [nr, nt, nT] = size(data);
         toneVec=toneVec(selectedTimeFrams);
@@ -52,29 +55,40 @@ switch experiment
         %% Run Qu.
         params = SetGenericDimsQuestParams(dims4quest, true);
         for ind = 1:dims4quest
-            params.emd{ind}.beta = 0;
-            params.tree{ind}.splitsNum = 2;
-            params.tree{ind}.treeDepth = inf;
+            params.emd{ind}.beta = 1;
+            
             
         end
+        
+        params.tree{3}.splitsNum = 2;
+            params.tree{3}.treeDepth = inf;
+            
+          
+             params.tree{1}.splitsNum = 9;
+            params.tree{1}.treeDepth = inf;
+             params.tree{2}.splitsNum = 9;
+            params.tree{2}.treeDepth = inf;
+            
         if dims4quest == 3
             runningOrder = [3 1 2];
         else
             runningOrder = [1  2];
         end
         params.data.over_rows = false;
-        params.data.to_normalize = true;
+        params.data.to_normalize = false;
         params.data.normalization_type = 'by_std';
-        params.init_aff{3}.metric = 'euc';
+%         params.init_aff{3}.metric = 'euc';
         % params.init_aff{3}.metric = 'cosine_similarityOnTrials';
-        % params.init_aff{3}.metric = 'cosine_similarity';
+        params.init_aff{3}.metric = 'cosine_similarity';
         params.n_iters = 1;
     case 'M2'
-        
+        params.tree{1}.runOnEmbdding = true;
+        params.tree{2}.runOnEmbdding = false;
+        params.tree{3}.runOnEmbdding = false;
 
         data = X(:, ind2data:3:end, :);
-        selectedTimeFrams = 35:60;
-% selectedTimeFrams=1:size(data, 2);
+%         selectedTimeFrams = 35:60;
+selectedTimeFrams=1:size(data, 2);
         data = data(:, selectedTimeFrams, :);
         [nr, nt, nT] = size(data);
 toneVec=toneVec(selectedTimeFrams);
@@ -100,32 +114,47 @@ toneVec=toneVec(selectedTimeFrams);
         params.init_aff{3}.metric = 'cosine_similarity';
         params.n_iters = 1;
     case 'D30'
+        params.tree{1}.runOnEmbdding = true;
+        params.tree{2}.runOnEmbdding = false;
+        params.tree{3}.runOnEmbdding = false;
         selectedTimeFrams = 115:140;
-% selectedTimeFrams=1:size(data, 2);
+selectedTimeFrams=1:size(X, 2);
         data =  X(:, selectedTimeFrams, :);
-        neuron_tree_level = 4;
+        neuron_tree_level =2;
         %% Run Qu.
         params = SetGenericDimsQuestParams(dims4quest, true);
         for ind = 1:dims4quest
             params.emd{ind}.beta = 1;
-            params.tree{ind}.splitsNum = 2;
-            params.tree{ind}.treeDepth = inf;
+            params.tree{ind}.splitsNum = 4;
+            params.tree{ind}.treeDepth = 5;
             
         end
+        
+%         params.tree{3}.splitsNum = 5;
+%             params.tree{3}.treeDepth = inf;
+            
+%             params.tree{1}.splitsNum = 7;
+%             params.tree{1}.treeDepth = 3;
+%             
+%          params.tree{2}.splitsNum = 5;
+%             params.tree{2}.treeDepth = 3;
+            
         if dims4quest == 3
             runningOrder = [  1 2 3];
         else
             runningOrder = [1  2];
         end
         params.data.over_rows = true;
-        params.data.to_normalize = true;
+        params.data.to_normalize = false;
         params.data.normalization_type = 'by_std';
         params.init_aff{3}.metric = 'euc';
         % params.init_aff{3}.metric = 'cosine_similarityOnTrials';
-        % params.init_aff{3}.metric = 'cosine_similarity';
+        params.init_aff{3}.metric = 'cosine_similarity';
         params.n_iters = 1;
+        
 end
-params.verbose = 1;
+
+params.verbose = 2;
 
 [ Trees, dual_aff, init_aff ] = RunGenericDimsQuestionnaire( params, permute(data,(runningOrder) ) );
 % measure the accuracy for neurons level
@@ -188,9 +217,10 @@ switch experiment
     %     case 'M2'
     
     case 'D8'
-         getClusteringByTreeAndPlot(Trees{runningOrder==1}{neuron_tree_level+3}, data(:, :, 1:30), NeuronsLabels, NeuronsLabels, params.init_aff{runningOrder(1)} , [experiment ' - Before CNO - Organized By Tree Level ' num2str(neuron_tree_level)])
-       getClusteringByTreeAndPlot(Trees{runningOrder==1}{neuron_tree_level+3}, data(:, :, 31:44), NeuronsLabels, NeuronsLabels, params.init_aff{runningOrder(1)} , [experiment ' - During CNO - Organized By Tree Level ' num2str(neuron_tree_level)])
-       getClusteringByTreeAndPlot(Trees{runningOrder==1}{neuron_tree_level+3}, data(:, :, 45:end), NeuronsLabels, NeuronsLabels, params.init_aff{runningOrder(1)} , [experiment ' - After CNO - Organized By Tree Level ' num2str(neuron_tree_level)])
+        neuron_tree_level=4;
+         getClusteringByTreeAndPlot(Trees{runningOrder==1}{neuron_tree_level}, data(:, :, 1:30), NeuronsLabels, NeuronsLabels, params.init_aff{runningOrder(1)} , [experiment ' - Before CNO - Organized By Tree Level ' num2str(neuron_tree_level)])
+       getClusteringByTreeAndPlot(Trees{runningOrder==1}{neuron_tree_level}, data(:, :, 31:44), NeuronsLabels, NeuronsLabels, params.init_aff{runningOrder(1)} , [experiment ' - During CNO - Organized By Tree Level ' num2str(neuron_tree_level)])
+       getClusteringByTreeAndPlot(Trees{runningOrder==1}{neuron_tree_level}, data(:, :, 45:end), NeuronsLabels, NeuronsLabels, params.init_aff{runningOrder(1)} , [experiment ' - After CNO - Organized By Tree Level ' num2str(neuron_tree_level)])
        
         selectedTimeFrams = 30:80;
         getClusteringByTreeAndPlot(Trees{runningOrder==1}{neuron_tree_level}, data(:, selectedTimeFrams, 1:30), NeuronsLabels, NeuronsLabels, params.init_aff{runningOrder(1)} , [experiment ' - Before CNO - Organized By Tree Level ' num2str(neuron_tree_level)])
@@ -235,12 +265,12 @@ switch experiment
 %         
 %         
     case 'D30'
-        selectedTimeFrams = 115:140;
+%         selectedTimeFrams = 115:140;
         [X1, ~, NeuronsLabels1] = loadNeuronsData(datapth, {'8_15_13_1-35'}, 360);
         [X2, ~, NeuronsLabels2] = loadNeuronsData(datapth, {'8_17_14_1-45'}, 360);
         [X3, ~, NeuronsLabels3] = loadNeuronsData(datapth, {'8_17_14_46-80'}, 360);
         
-        
+        neuron_tree_level = 3;
         getClusteringByTreeAndPlot(Trees{runningOrder==1}{neuron_tree_level}, data(:, :, :), NeuronsLabels, NeuronsLabels, params.init_aff{runningOrder(1)} , [experiment ' -  8/12/14 Organized By Tree Of 8/12/14 Level ' num2str(neuron_tree_level)])
        
         

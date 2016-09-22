@@ -36,64 +36,66 @@ load('../../svdKmeansCluster/D30/commonIndex')
 shuffleRows = 1:sizeRows;
 shuffleCols = 1:sizeCols;
 shuffleTime = 1:maxTime;
-data = matrix;
-dataOrig = data;
-%% search parameters
-% k_t_vec = [2 3 4 5 6 7];
-% k_r_vec = [5 6 7 8 9 10];
-% l = 1;
-% 
-% for threshold = 0.4:0.05:0.65
-%     
-%     for k_t = k_t_vec
-%         params(2).k = k_t;
-%         for k_r = k_r_vec
-%             params(1).k = k_r;
-%             params(1).threshold = threshold;
-%             [class, vectors, affinity] = svdClustering3D(data, params);
-%             if length(unique(class{1})) == 9
-% %                 disp([k_t, k_r]);
-% %                 figure;
-% %                 [row_vecs, row_vals] = CalcEigs(affinity{1}, 4);
-% %                 embedding = row_vecs*row_vals;
-% %                 %             subplot(length(k_t_vec), length(k_r_vec), l);
-% %                 plotEmbeddingWithColors(embedding, class{1}, num2str(l));
-% %                 colorbar off;
-%                 disp(['l = ' num2str(l) ' Neurons - k_t = ' num2str(k_t) ' k_r = ' num2str(k_r) ' threshold = ' num2str(threshold)]);
-% %                 xlim([-0.1 0.3])
-% %                 xlim([-0.05 0.1])
-% %                 view([-115 10]);
-% %                 drawnow;
-%                 dummyTree.clustering = class{1};
-%                 [meanMat, allMat, meanMatAlltrials] = getCentroidsByTree(dummyTree, data, NeuronsLabels, NeuronsLabels);
-% %                 plotByClustering(allMat,  num2str(l));drawnow;
-%                 plotByClustering(meanMat,  num2str(l));drawnow;                
-%                 l = l + 1;
-%             end
-%         end
-%     end
-% end
+selectedTimeFrams = 115:140;
+data_all = matrix;
+data_tone = matrix(:, selectedTimeFrams, :);
 
+%% search parameters
+k_t_vec = 5;%[2 3 4 5 6 7];
+k_r_vec = 8;%[5 6 7 8 9 10];
+l = 1;
+if 0
+    for threshold = 0.4:0.05:0.65
+        
+        for k_t = k_t_vec
+            params(2).k = k_t;
+            for k_r = k_r_vec
+                params(1).k = k_r;
+                params(1).threshold = threshold;
+                [class, vectors, affinity] = svdClustering3D(data_all, params);
+                
+                %                 disp([k_t, k_r]);
+                %                 figure;
+                %                 [row_vecs, row_vals] = CalcEigs(affinity{1}, 4);
+                %                 embedding = row_vecs*row_vals;
+                %                 %             subplot(length(k_t_vec), length(k_r_vec), l);
+                %                 plotEmbeddingWithColors(embedding, class{1}, num2str(l));
+                %                 colorbar off;
+                disp(['l = ' num2str(l) ' Neurons - k_t = ' num2str(k_t) ' k_r = ' num2str(k_r) ' threshold = ' num2str(threshold)]);
+                %                 xlim([-0.1 0.3])
+                %                 xlim([-0.05 0.1])
+                %                 view([-115 10]);
+                %                 drawnow;
+                dummyTree.clustering = class{1};
+                [meanMat, allMat, meanMatAlltrials] = getCentroidsByTree(dummyTree, data_all, NeuronsLabels, NeuronsLabels);
+                %                 plotByClustering(allMat,  num2str(l));drawnow;
+                plotByClustering(meanMat,  num2str(l));drawnow;
+                l = l + 1;
+                
+            end
+        end
+    end
+end
 %% Run on selected parameters
-% 1  k_t = 3 k_r = 9 threshold = 0.4 not good
-% 3  k_t = 5 k_r = 7 threshold = 0.4 best
-% 5  k_t = 7 k_r = 8 threshold = 0.4 not good
-% 7  k_t = 3 k_r = 8 threshold = 0.45 not good
-% 11 k_t = 7 k_r = 9 threshold = 0.45 not good
-% 15 k_t = 7 k_r = 9 threshold = 0.5 maybe
+
 params(2).k = 5;
-params(1).k = 7;
+params(1).k = 8;
 params(1).threshold = 0.4;
-[class, vectors, affinity] = svdClustering3D(data, params);
-dummyTree.clustering = class{1};
-[meanMat, allMat, meanMatAlltrials] = getCentroidsByTree(dummyTree, data, NeuronsLabels, NeuronsLabels);
-% plotByClustering(allMat,  ['8/12/14 Organized By SVD Clustering']);
+[class_all, vectors_all, affinity_all] = svdClustering3D(data_all, params);
+
+params(2).k = 5;
+params(1).k = 8;
+params(1).threshold = 0.4;
+params(3).k = [10, 20];
+[class_tone vectors_tone, affinity_tone] = svdClustering3D(data_tone, params);
+
+dummyTree.clustering = class_all{1};
+[meanMat, allMat, meanMatAlltrials] = getCentroidsByTree(dummyTree, data_all, NeuronsLabels, NeuronsLabels);
 
 
 [X1, ~, NeuronsLabels1] = loadNeuronsData('../../../datasets\biomed\D30/', {'8_15_13_1-35'}, 360);
 [X2, ~, NeuronsLabels2] = loadNeuronsData('../../../datasets\biomed\D30/', {'8_17_14_1-45'}, 360);
 [X3, ~, NeuronsLabels3] = loadNeuronsData('../../../datasets\biomed\D30/', {'8_17_14_46-80'}, 360);
-
 [meanMat1, allMat1, meanMatAlltrials1] = getCentroidsByTree(dummyTree, X1(:, :, :), NeuronsLabels, NeuronsLabels1);
 [meanMat2, allMat2, meanMatAlltrials2] = getCentroidsByTree(dummyTree, X2(:, :, :), NeuronsLabels, NeuronsLabels2);
 [meanMat3, allMat3, meanMatAlltrials3] = getCentroidsByTree(dummyTree, X3(:, :, :), NeuronsLabels, NeuronsLabels3);
@@ -104,18 +106,45 @@ plotByClustering(meanMat2,  ['8/17/14 Part 1 Organized By SVD Clustering Of 8/12
 plotByClustering(meanMat3,  ['8/17/14 Part 2 Organized By SVD Clustering Of 8/12/14']);
 
 
-plotByClustering(allMat,  ['8/15/13 Organized By SVD Clustering Of 8/12/14']);
-plotByClustering(allMat,  ['8/17/14 Part 1 Organized By SVD Clustering Of 8/12/14']);
-plotByClustering(allMat,  ['8/17/14 Part 2 Organized By SVD Clustering Of 8/12/14']);
 plotByClustering(allMat,  ['8/12/14 Organized By SVD Clustering']);
+plotByClustering(allMat1,  ['8/15/13 Organized By SVD Clustering Of 8/12/14']);
+plotByClustering(allMat2,  ['8/17/14 Part 2 Organized By SVD Clustering Of 8/12/14']);
+plotByClustering(allMat3,  ['8/17/14 Part 2 Organized By SVD Clustering Of 8/12/14']);
+
+% zoom into the tone
+
+plotByClustering(meanMat,  ['8/12/14 Organized By SVD Clustering'], selectedTimeFrams);
+plotByClustering(meanMat1,  ['8/15/13 Organized By SVD Clustering Of 8/12/14'], selectedTimeFrams);
+plotByClustering(meanMat2,  ['8/17/14 Part 1 Organized By SVD Clustering Of 8/12/14'], selectedTimeFrams);
+plotByClustering(meanMat3,  ['8/17/14 Part 2 Organized By SVD Clustering Of 8/12/14'], selectedTimeFrams);
+th_activation=.7;
+plotOnsetByClustering(meanMat,  ['8/12/14 Organized By SVD Clustering'], 1:360, th_activation);xlim([100 220]);
+% plotOnsetByClustering(allMat,  ['8/12/14 Organized By SVD Clustering'], 1:360, th_activation);xlim([115 140]);
+
+plotOnsetByClustering(meanMat1,  ['8/15/13 Organized By SVD Clustering Of 8/12/14'],  1:360, th_activation);xlim([100 220]);
+plotOnsetByClustering(meanMat2,  ['8/17/14 Part 1 Organized By SVD Clustering Of 8/12/14'],  1:360, th_activation);xlim([100 220]);
+plotOnsetByClustering(meanMat3,  ['8/17/14 Part 2 Organized By SVD Clustering Of 8/12/14'],  1:360, th_activation);xlim([100 220]);
+
+plotByClustering(allMat,  ['8/12/14 Organized By SVD Clustering'], selectedTimeFrams);
+plotByClustering(allMat1,  ['8/15/13 Organized By SVD Clustering Of 8/12/14'], selectedTimeFrams);
+plotByClustering(allMat2,  ['8/17/14 Part 1 Organized By SVD Clustering Of 8/12/14'], selectedTimeFrams);
+plotByClustering(allMat3,  ['8/17/14 Part 2 Organized By SVD Clustering Of 8/12/14'], selectedTimeFrams);
 
 
-% filePrefix = strcat('D30/ClassResults2',filePrefix(4:end)); %0.5
+dummyTree.clustering = class_tone{1};
+[meanMat_tone, allMat_tone, meanMatAlltrials] = getCentroidsByTree(dummyTree, data_tone, NeuronsLabels, NeuronsLabels);
+[meanMat1_tone, allMat1_tone, meanMatAlltrials1] = getCentroidsByTree(dummyTree, X1(:, selectedTimeFrams, :), NeuronsLabels, NeuronsLabels1);
+[meanMat2_tone, allMat2_tone, meanMatAlltrials2] = getCentroidsByTree(dummyTree, X2(:, selectedTimeFrams, :), NeuronsLabels, NeuronsLabels2);
+[meanMat3_tone, allMat3_tone, meanMatAlltrials3] = getCentroidsByTree(dummyTree, X3(:, selectedTimeFrams, :), NeuronsLabels, NeuronsLabels3);
 
-% save(strcat(filePrefix,'affinity'),'affinityRows','classRows');
-% save(strcat(filePrefix,'affinityCols'),'affinityCols','classCols');
 
-% [ err_rate,row_order,col_order,trial_order ] = OrganizeData3D( dataOrig, data, affinityRows, affinityCols{1},...
-%  affinityTime, shuffleRows, shuffleCols, shuffleTime, 4, 4, 4 );
+plotByClustering(meanMat_tone,  ['8/12/14 Organized By SVD Clustering']);
+plotByClustering(meanMat1_tone,  ['8/15/13 Organized By SVD Clustering Of 8/12/14']);
+plotByClustering(meanMat2_tone,  ['8/17/14 Part 1 Organized By SVD Clustering Of 8/12/14']);
+plotByClustering(meanMat3_tone,  ['8/17/14 Part 2 Organized By SVD Clustering Of 8/12/14']);
 
+plotByClustering(allMat_tone,  ['8/12/14 Organized By SVD Clustering']);
+plotByClustering(allMat1_tone,  ['8/15/13 Organized By SVD Clustering Of 8/12/14']);
+plotByClustering(allMat2_tone,  ['8/17/14 Part 1 Organized By SVD Clustering Of 8/12/14']);
+plotByClustering(allMat3_tone,  ['8/17/14 Part 2 Organized By SVD Clustering Of 8/12/14']);
 

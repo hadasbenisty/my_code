@@ -23,6 +23,7 @@
 %-----------------------------
 % Ver	Date	 Who	Descr
 %-----------------------------
+% 20.00 17.05.16 UD     Adopting to new structure
 % 19.09 14.10.14 UD     Adding more events
 % 19.08 11.10.14 UD     Adding enumeration to event names and sequence nummber
 % 18.12 11.07.14 UD     created
@@ -35,7 +36,10 @@
 %analysisDir         = 'C:\Uri\DataJ\Janelia\Analysis\d13\14_08_14\';
 %analysisDir         = 'C:\LabUsers\Uri\Data\Janelia\Analysis\m2\4_4_14';
 
-analysisDir         = '..\..\..\datasets\biomed\D8\8_6_14_21-60_cno';%\8_6_14 new\8_6_14_cno\';
+% analysisDir         = '..\..\..\datasets\biomed\D8\8_6_14_21-60_cno';%\8_6_14 new\8_6_14_cno\';
+analysisDir         = '../../../datasets/biomed/D8/behavioral/8_6_14_1-20_control/';
+analysisDir         = '../../../datasets/biomed/D8/behavioral/8_6_14_21-60_cno/';
+analysisDir         = '..\8_17_14_1-45\';
 % special trial (repetition) to show (Change it if you need)
 trialIndShow        = 1:40;
 % frame rate ratio between Two Photon imaging and Behavior
@@ -98,20 +102,21 @@ else
                 fprintf('W : Trial %d, Event %d has undefined name %s. Set Id = 0.\n',trialInd,m,allTrialEvents{trialInd}{m}.Name)
                 eInd = 0;
             end
-            allTrialEvents{trialInd}{m}.Id = eInd;
+            allTrialEvents{trialInd}{m}.Type = eInd;
         end
     end
     num_trials = min(fileNumRoi,fileNumEvent);
     eventsLabelExist = true;
 end
 
-roisPerTrial   = length(allTrialRois{1});
+%%
+roisPerTrial   = length(allTrialRois{2});
 roiNames         = cell(1,roisPerTrial);
 for m = 1:roisPerTrial,
-    if isempty(allTrialRois{1}{m}.procROI),
+    if isempty(allTrialRois{2}{m}.Data(:,2)),
         error('Two Photon data is not complete. Can not find dF/F results.')
     end
-    roiNames{m}       = allTrialRois{1}{m}.Name;
+    roiNames{m}       = allTrialRois{2}{m}.Name;
 end
 
 matrix                   = []; % data structure - rows are sensors (ROIs), cols are time
@@ -121,7 +126,8 @@ if eventsLabelExist
 end
 sensors_dat.titles       = roiNames;
 
-for trialIndShow = 1:num_trials
+%%
+for trialIndShow = 2:num_trials
     %%%
     % Extract specific trial data for Two Photon ROI
     %%%
@@ -140,16 +146,16 @@ for trialIndShow = 1:num_trials
     elseif roisPerTrialNum ~= roisPerTrial
         error('trial %d has more ROIs', trialIndShow)
     end
-    dffData          = allTrialRois{trialIndShow}{1}.procROI; % actual data
+    dffData          = allTrialRois{trialIndShow}{1}.Data(:,2); % actual data
     [framNum,~]      = size(dffData);
     dffDataArray     = repmat(dffData,1,roisPerTrialNum);
-    trialRoiNames         = cell(1,roisPerTrialNum);
+    trialRoiNames    = cell(1,roisPerTrialNum);
     % collect
     for m = 1:roisPerTrialNum,
-        if isempty(allTrialRois{trialIndShow}{m}.procROI),
+        if isempty(allTrialRois{trialIndShow}{m}.Data(:,2)),
             error('Two Photon data is not complete. Can not find dF/F results.')
         end
-        dffDataArray(:,m) = allTrialRois{trialIndShow}{m}.procROI;
+        dffDataArray(:,m) = allTrialRois{trialIndShow}{m}.Data(:,2);
         trialRoiNames{m}  = allTrialRois{trialIndShow}{m}.Name;
     end
     
@@ -166,20 +172,20 @@ for trialIndShow = 1:num_trials
         if eventsPerTrialNum < 1,
             warning('Could not find Event data for trial %d',trialIndShow);
         end
-        timeData         = allTrialEvents{trialIndShow}{1}.TimeInd; % actual data
+        timeData         = allTrialEvents{trialIndShow}{1}.tInd; % actual data
         eventDataArray   = zeros(framNum,eventsPerTrialNum);
         eventNames       = cell(1,eventsPerTrialNum);
         
         trialEvents = zeros(nEvents,framNum);
         % collect
         for m = 1:eventsPerTrialNum,
-            timeInd     = allTrialEvents{trialIndShow}{m}.TimeInd;
+            timeInd     = allTrialEvents{trialIndShow}{m}.tInd;
             timeInd     = round(timeInd./frameRateRatio); % transfers to time of the two photon
             timeInd     = max(1,min(framNum,timeInd));
             % assign to vector
             eventDataArray(timeInd(1):timeInd(2),m) = 1;
             eventNames{m} = sprintf('%s - %d',allTrialEvents{trialIndShow}{m}.Name, allTrialEvents{trialIndShow}{m}.SeqNum);
-            trialEvents(allTrialEvents{trialIndShow}{m}.Id,timeInd(1):timeInd(2)) = 1;
+            trialEvents(allTrialEvents{trialIndShow}{m}.Type,timeInd(1):timeInd(2)) = 1;
         end
     end
     
@@ -190,7 +196,7 @@ for trialIndShow = 1:num_trials
     end
     
 end
-
+%%
 figure;imagesc(matrix);
 sensors_dat_titles = sensors_dat.titles;
 save([analysisDir 'matrix.mat'],'matrix')
