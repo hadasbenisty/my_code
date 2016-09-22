@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<conf>                          <!-- <conf test_mode="True"> is deprecated, test mode is set by input argument -->
+  <platform>matlab</platform>   <!-- currently supported: [matlab, R] -->
+  <working_dir>/u/hadasbe/quest/my_code/animationSignal/</working_dir>
+  <script_name>mainAnimationTiling</script_name>
+  <inputs>
+    <input name="dims" type="hard_coded">
+      <min>2</min>      <!-- min val of input arg -->
+      <max>3</max>      <!-- max val of input arg -->  
+    </input>
+    <input name="epsilon" type="hard_coded">
+      <min>1</min>      <!-- min val of input arg -->
+      <max>8</max>      <!-- max val of input arg -->
+    </input>
+    <input name="overwrite" type="hard_coded">
+      <min>0</min>
+      <max>0</max>
+    </input>     
+  </inputs>  
+
+  <pbs_params>
+    <mem>5gb</mem>
+    <ncpus>1</ncpus>
+    <queue>all_q</queue>
+    <job_name>animation</job_name>
+  </pbs_params>
+</conf>
